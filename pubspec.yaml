@@ -1,0 +1,54 @@
+name: flutter_application_1
+description: "Aplikasi Rental PlayStation Profesional"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- LIBRARY WAJIB (ICON BAWAAN) ---
+  cupertino_icons: ^1.0.8
+
+  # --- FIREBASE (DATABASE) ---
+  firebase_core: ^3.6.0      # Inti Firebase
+  cloud_firestore: ^5.4.4    # Database Firestore
+
+  # --- STATE MANAGEMENT (LOGIC) ---
+  flutter_bloc: ^8.1.6       # Untuk memisahkan Logic & UI
+  equatable: ^2.0.5          # Membantu perbandingan data di Bloc
+
+  # --- UTILITIES (FORMAT & GAMBAR) ---
+  intl: ^0.19.0              # Untuk Format Rupiah & Tanggal
+  cached_network_image: ^3.4.1 # Untuk menampilkan gambar dari internet
+  firebase_auth: ^5.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # --- LINTER (PENGECEK KODE) ---
+  flutter_lints: ^4.0.0
+
+  # --- ICON GENERATOR (GANTI LOGO HP) ---
+  flutter_launcher_icons: ^0.14.1
+
+# --- KONFIGURASI TAMPILAN FLUTTER ---
+flutter:
+  uses-material-design: true
+
+  # Jika nanti Anda mau pakai gambar lokal (offline), daftar di sini:
+  # assets:
+  #   - assets/images/
+
+# --- KONFIGURASI LOGO APLIKASI ---
+# Pastikan Anda sudah menaruh gambar logo di folder: assets/icon/icon.png
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png" # Ganti sesuai lokasi file gambar Anda
+  min_sdk_android: 21

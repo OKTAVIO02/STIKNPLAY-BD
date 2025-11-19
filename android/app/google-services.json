@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "881007028180",
+    "project_id": "playstationrental-6e032",
+    "storage_bucket": "playstationrental-6e032.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:881007028180:android:0f19d7a2fd67ee618d9841",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0Tee6j1cw4lsH9Nf9PHn104RH77rxU8A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
