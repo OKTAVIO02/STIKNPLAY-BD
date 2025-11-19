@@ -36,16 +36,19 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  // Logic Register (Update Disini)
-  Future<void> register(String email, String password) async {
+  // Logic Register (UPDATE: Tambah username)
+  Future<void> register(String username, String email, String password) async {
     emit(AuthLoading());
     try {
-      final user = await _repository.register(email: email, password: password);
+      // Kirim username ke repository
+      final user = await _repository.register(
+        username: username, 
+        email: email, 
+        password: password
+      );
+      
       if (user != null) {
-        // --- PERUBAHAN PENTING ---
-        // Segera logout agar tidak auto-login
-        await _repository.logout(); 
-        
+        await _repository.logout(); // Logout otomatis agar user login manual
         emit(AuthSuccess(user));
       }
     } catch (e) {

@@ -4,7 +4,7 @@ import 'console_model.dart';
 class HomeRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // 1. AMBIL DATA CONSOLE (Untuk Halaman Home)
+  // 1. AMBIL DATA (Read)
   Stream<List<ConsoleModel>> getConsoles() {
     return _firestore.collection('consoles').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -13,27 +13,46 @@ class HomeRepository {
     });
   }
 
-  // 2. TAMBAH UNIT BARU (Khusus Admin)
+  // 2. TAMBAH DATA (Create)
   Future<void> addConsole(ConsoleModel console) async {
     try {
-      // Minta Firebase buatkan ID dokumen baru secara otomatis
       final docRef = _firestore.collection('consoles').doc();
-      
-      // Siapkan data yang mau disimpan
-      // Kita paksa ID-nya sesuai dengan ID dokumen yang baru dibuat
       final newConsole = ConsoleModel(
         id: docRef.id, 
         name: console.name,
         type: console.type,
         price: console.price,
-        isAvailable: true, // Default unit baru pasti tersedia
+        isAvailable: true,
         imageUrl: console.imageUrl,
       );
-
-      // Simpan ke Firestore
       await docRef.set(newConsole.toMap());
     } catch (e) {
       throw Exception("Gagal menambah unit: $e");
+    }
+  }
+
+  // 3. UPDATE DATA (Edit)
+  Future<void> updateConsole(ConsoleModel console) async {
+    try {
+      // Kita cari dokumen berdasarkan ID, lalu update isinya
+      await _firestore.collection('consoles').doc(console.id).update({
+        'name': console.name,
+        'type': console.type,
+        'price': console.price,
+        'imageUrl': console.imageUrl,
+        // isAvailable tidak diupdate disini agar status sewa tidak rusak
+      });
+    } catch (e) {
+      throw Exception("Gagal mengupdate unit: $e");
+    }
+  }
+
+  // 4. HAPUS DATA (Delete)
+  Future<void> deleteConsole(String consoleId) async {
+    try {
+      await _firestore.collection('consoles').doc(consoleId).delete();
+    } catch (e) {
+      throw Exception("Gagal menghapus unit: $e");
     }
   }
 }

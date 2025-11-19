@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AuthRepository {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  // Fungsi Login
+  // Fungsi Login (Tetap)
   Future<User?> login({required String email, required String password}) async {
     try {
       final credential = await _firebaseAuth.signInWithEmailAndPassword(
@@ -12,21 +12,32 @@ class AuthRepository {
       );
       return credential.user;
     } on FirebaseAuthException catch (e) {
-      // Menangani error spesifik (misal: password salah)
       throw Exception(e.message);
     } catch (e) {
       throw Exception("Terjadi kesalahan login: $e");
     }
   }
 
-  // Fungsi Register (Daftar)
-  Future<User?> register({required String email, required String password}) async {
+  // Fungsi Register (UPDATE: Tambah parameter username)
+  Future<User?> register({
+    required String username, // <--- Parameter Baru
+    required String email, 
+    required String password
+  }) async {
     try {
+      // 1. Buat Akun di Firebase
       final credential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email, 
         password: password
       );
-      return credential.user;
+      
+      // 2. Simpan Username ke Profil User (displayName)
+      if (credential.user != null) {
+        await credential.user!.updateDisplayName(username);
+        await credential.user!.reload(); // Refresh data user
+      }
+
+      return _firebaseAuth.currentUser;
     } on FirebaseAuthException catch (e) {
       throw Exception(e.message);
     } catch (e) {
@@ -39,7 +50,7 @@ class AuthRepository {
     await _firebaseAuth.signOut();
   }
 
-  // Cek siapa yang sedang login sekarang
+  // Cek User
   User? getCurrentUser() {
     return _firebaseAuth.currentUser;
   }
