@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; // Import Bloc
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'firebase_options.dart';
-
-// Import Halaman Awal
 import 'core/presentation/splash_page.dart';
-
-// Import Theme Cubit yang baru dibuat
 import 'core/presentation/theme_cubit.dart'; 
 
 void main() async {
@@ -22,7 +18,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Bungkus MaterialApp dengan BlocProvider ThemeCubit
     return BlocProvider(
       create: (context) => ThemeCubit(),
       child: BlocBuilder<ThemeCubit, ThemeMode>(
@@ -31,38 +26,43 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             title: 'Rental PlayStation',
             
-            // 2. Konfigurasi Tema Terang (Light)
+            // --- TEMA TERANG (LIGHT) ---
             theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.blue,
-                brightness: Brightness.light, // Mode Terang
-              ),
+              brightness: Brightness.light,
               useMaterial3: true,
-              scaffoldBackgroundColor: const Color(0xFFF5F5F5), // Abu muda
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.light),
+              scaffoldBackgroundColor: const Color(0xFFF8F9FA), // Abu sangat muda
+              cardColor: Colors.white,
               appBarTheme: const AppBarTheme(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-              ),
-            ),
-
-            // 3. Konfigurasi Tema Gelap (Dark)
-            darkTheme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.blue,
-                brightness: Brightness.dark, // Mode Gelap
-              ),
-              useMaterial3: true,
-              scaffoldBackgroundColor: const Color(0xFF121212), // Hitam pekat
-              cardColor: const Color(0xFF1E1E1E), // Abu gelap untuk Card
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Color(0xFF1E1E1E),
+                backgroundColor: Colors.blue, 
                 foregroundColor: Colors.white,
+                elevation: 0
               ),
+              // Warna teks otomatis hitam
             ),
 
-            // 4. Logic Pemilihan Tema (Dikontrol oleh Cubit)
-            themeMode: themeMode, 
-            
+            // --- TEMA GELAP (DARK) ---
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
+              scaffoldBackgroundColor: const Color(0xFF121212), // Hitam pekat
+              cardColor: const Color(0xFF1E1E1E), // Abu gelap (untuk Card)
+              dividerColor: Colors.white24,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF1E1E1E), 
+                foregroundColor: Colors.white,
+                elevation: 0
+              ),
+              // Warna teks otomatis putih
+              bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                backgroundColor: Color(0xFF1E1E1E),
+                selectedItemColor: Colors.blueAccent,
+                unselectedItemColor: Colors.grey,
+              )
+            ),
+
+            themeMode: themeMode, // Dikontrol Cubit
             home: const SplashPage(),
           );
         },

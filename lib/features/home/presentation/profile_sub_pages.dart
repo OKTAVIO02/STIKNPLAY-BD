@@ -211,11 +211,11 @@ class PrivacyPolicyPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Kebijakan Privasi")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text("Ketentuan & Privasi", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             SizedBox(height: 20),
             Text("1. Pengumpulan Data\nKami mengumpulkan data email untuk login.\n\n2. Keamanan\nData aman di Firebase Google.", style: TextStyle(height: 1.5)),
