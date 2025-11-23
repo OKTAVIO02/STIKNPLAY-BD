@@ -1,34 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // <--- Tambahkan Import Ini
+import 'package:firebase_auth/firebase_auth.dart';
 import 'booking_model.dart';
 
 class BookingRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // 1. BUAT BOOKING BARU (Tetap sama)
+  // 1. CREATE BOOKING (Simpan data pesanan)
   Future<void> createBooking(BookingModel booking) async {
     return _firestore.runTransaction((transaction) async {
       final bookingRef = _firestore.collection('bookings').doc();
       final consoleRef = _firestore.collection('consoles').doc(booking.consoleId);
 
       transaction.set(bookingRef, booking.toMap());
+      // Update status console jadi tidak tersedia
       transaction.update(consoleRef, {'isAvailable': false});
     });
   }
 
-  // 2. AMBIL DATA HISTORY (PERBAIKAN DISINI)
+  // 2. GET HISTORY (Khusus User yang login)
   Stream<List<BookingModel>> getBookings() {
-    // Ambil Email User yang sedang Login saat ini
     final user = FirebaseAuth.instance.currentUser;
     final String myEmail = user?.email ?? ""; 
-
-    return _firestore
-        .collection('bookings')
-        // --- FILTER PENTING: Hanya ambil data yang userName-nya sama dengan Email Saya ---
-        .where('userName', isEqualTo: myEmail) 
+    return _firestore.collection('bookings')
+        .where('userName', isEqualTo: myEmail)
         .orderBy('bookingDate', descending: true)
-        .snapshots()
-        .map((snapshot) {
+        .snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
         Map<String, dynamic> data = doc.data();
         return BookingModel(
@@ -45,25 +41,24 @@ class BookingRepository {
     });
   }
 
-  // 3. SELESAIKAN SEWA (Tetap sama)
+  // 3. FINISH BOOKING (Admin menyelesaikan pesanan)
   Future<void> finishBooking(String bookingId, String consoleId) async {
     return _firestore.runTransaction((transaction) async {
       final bookingRef = _firestore.collection('bookings').doc(bookingId);
       final consoleRef = _firestore.collection('consoles').doc(consoleId);
-
+      // Update status booking jadi sukses
       transaction.update(bookingRef, {'status': 'success'});
+      // Console jadi tersedia lagi
       transaction.update(consoleRef, {'isAvailable': true});
     });
   }
 
-  // 4. KHUSUS ADMIN (Tetap sama)
+  // 4. GET ALL ACTIVE (Khusus Admin)
   Stream<List<BookingModel>> getAllActiveBookings() {
-    return _firestore
-        .collection('bookings')
-        .where('status', isEqualTo: 'pending') 
+    return _firestore.collection('bookings')
+        .where('status', isEqualTo: 'pending')
         .orderBy('bookingDate', descending: true)
-        .snapshots()
-        .map((snapshot) {
+        .snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
         Map<String, dynamic> data = doc.data();
         return BookingModel(
