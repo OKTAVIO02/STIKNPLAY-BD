@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 
-import '../../features/home/presentation/home_page.dart';
+// Import Halaman Tujuan
 import '../../features/auth/presentation/login_page.dart';
-import '../../features/home/presentation/admin_dashboard_page.dart'; // Import Admin
+import '../../features/home/presentation/home_page.dart';
+import '../../features/home/presentation/admin_dashboard_page.dart';
+
+// IMPORT WIDGET LOTTIE YANG SUDAH KITA BUAT
+import 'ps_loading_widget.dart'; 
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -12,78 +17,80 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _opacityAnimation;
-
-  // --- SETTING EMAIL ADMIN ---
-  final String adminEmail = "admin@gmail.com"; // GANTI INI DENGAN EMAIL ADMIN ANDA
-
+class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2));
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
-    _controller.forward();
-    _navigateToNextPage();
+    _checkLoginStatus();
   }
 
-  _navigateToNextPage() async {
-    await Future.delayed(const Duration(seconds: 3));
+  void _checkLoginStatus() async {
+    // 1. Tahan tampilan Splash selama 3 detik agar Lottie-nya puas dilihat
+    await Future.delayed(const Duration(seconds: 5));
 
-    if (mounted) {
-      User? currentUser = FirebaseAuth.instance.currentUser;
+    if (!mounted) return;
 
-      if (currentUser != null) {
-        // --- LOGIKA PEMISAHAN ---
-        if (currentUser.email == adminEmail) {
-           // JIKA ADMIN -> Masuk Dashboard Admin
-           Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const AdminDashboardPage()),
-          );
-        } else {
-           // JIKA USER BIASA -> Masuk Home User
-           Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomePage()),
-          );
-        }
-      } else {
-        // BELUM LOGIN
+    // 2. Cek apakah user sedang login?
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      // --- LOGIKA PEMISAHAN ADMIN VS USER ---
+      // Ganti email ini dengan email admin asli Anda
+      const String adminEmail = "admin@gmail.com"; 
+
+      if (user.email == adminEmail) {
+        // Jika Admin -> Ke Dashboard Admin
         Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
+          context, 
+          MaterialPageRoute(builder: (context) => const AdminDashboardPage())
+        );
+      } else {
+        // Jika User Biasa -> Ke Home Page
+        Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(builder: (context) => const HomePage())
         );
       }
+    } else {
+      // 3. Jika belum login -> Ke Halaman Login
+      Navigator.pushReplacement(
+        context, 
+        MaterialPageRoute(builder: (context) => const LoginPage())
+      );
     }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[800],
+      // Background putih bersih agar Lottie terlihat jelas
+      backgroundColor: const Color.fromARGB(255, 209, 237, 243), 
       body: Center(
-        child: FadeTransition(
-          opacity: _opacityAnimation,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                child: Icon(Icons.gamepad_rounded, size: 80, color: Colors.blue[800]),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // --- ANIMASI LOTTIE PLAYSTATION ---
+            // Kita panggil widget yang sudah dibuat tadi
+            const PsLoadingWidget(size: 250), 
+            
+            const SizedBox(height: 20),
+            
+            // Teks Judul Aplikasi
+            Text(
+              "PS RENTAL PRO",
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: Colors.blue[900], // Biru Tua
+                letterSpacing: 2,
               ),
-              const SizedBox(height: 20),
-              const Text("STIKNPLAY", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2)),
-            ],
-          ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              "Sewa Console Jadi Mudah",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
         ),
       ),
     );
