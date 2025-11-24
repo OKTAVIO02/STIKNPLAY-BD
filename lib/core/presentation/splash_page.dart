@@ -8,7 +8,7 @@ import '../../features/home/presentation/home_page.dart';
 import '../../features/home/presentation/admin_dashboard_page.dart';
 
 // IMPORT WIDGET LOTTIE YANG SUDAH KITA BUAT
-import 'ps_loading_widget.dart'; 
+import 'ps_loading_widget.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -36,27 +36,23 @@ class _SplashPageState extends State<SplashPage> {
     if (user != null) {
       // --- LOGIKA PEMISAHAN ADMIN VS USER ---
       // Ganti email ini dengan email admin asli Anda
-      const String adminEmail = "admin@gmail.com"; 
+      const String adminEmail = "admin@gmail.com";
 
       if (user.email == adminEmail) {
         // Jika Admin -> Ke Dashboard Admin
         Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(builder: (context) => const AdminDashboardPage())
-        );
+            context,
+            MaterialPageRoute(
+                builder: (context) => const AdminDashboardPage()));
       } else {
         // Jika User Biasa -> Ke Home Page
         Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(builder: (context) => const HomePage())
-        );
+            context, MaterialPageRoute(builder: (context) => const HomePage()));
       }
     } else {
       // 3. Jika belum login -> Ke Halaman Login
       Navigator.pushReplacement(
-        context, 
-        MaterialPageRoute(builder: (context) => const LoginPage())
-      );
+          context, MaterialPageRoute(builder: (context) => const LoginPage()));
     }
   }
 
@@ -64,20 +60,20 @@ class _SplashPageState extends State<SplashPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       // Background putih bersih agar Lottie terlihat jelas
-      backgroundColor: const Color.fromARGB(255, 209, 237, 243), 
+      backgroundColor: const Color.fromARGB(255, 205, 246, 255),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // --- ANIMASI LOTTIE PLAYSTATION ---
             // Kita panggil widget yang sudah dibuat tadi
-            const PsLoadingWidget(size: 250), 
-            
+            const PsLoadingWidget(size: 250),
+
             const SizedBox(height: 20),
-            
+
             // Teks Judul Aplikasi
             Text(
-              "PS RENTAL PRO",
+              "Welcome to StickNPlayY",
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
