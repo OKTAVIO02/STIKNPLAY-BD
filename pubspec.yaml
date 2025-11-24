@@ -10,49 +10,32 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
-  # --- LIBRARY WAJIB (ICON BAWAAN) ---
   cupertino_icons: ^1.0.8
-
-  # --- FIREBASE (DATABASE) ---
-  firebase_core: ^3.6.0      # Inti Firebase
-  cloud_firestore: ^5.4.4    # Database Firestore
-  firebase_auth: ^5.7.0      # Autentikasi Pengguna
-
-  # --- STATE MANAGEMENT (LOGIC) ---
-  flutter_bloc: ^8.1.6       # Untuk memisahkan Logic & UI
-  equatable: ^2.0.5          # Membantu perbandingan data di Bloc
-
-  # --- UTILITIES (FORMAT & GAMBAR) ---
-  intl: ^0.19.0              # Untuk Format Rupiah & Tanggal
-  cached_network_image: ^3.4.1 # Untuk menampilkan gambar dari internet
-  
-  # --- ANIMASI ---
-  lottie: ^3.3.2             # Untuk menampilkan animasi JSON
+  firebase_core: ^3.6.0
+  cloud_firestore: ^5.4.4
+  firebase_auth: ^5.7.0
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+  intl: ^0.19.0
+  cached_network_image: ^3.4.1
+  lottie: ^3.3.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # --- LINTER (PENGECEK KODE) ---
   flutter_lints: ^4.0.0
-
-  # --- ICON GENERATOR (GANTI LOGO HP) ---
   flutter_launcher_icons: ^0.14.1
 
-# --- KONFIGURASI LOGO APLIKASI ---
-# Pastikan Anda sudah menaruh gambar logo di folder: assets/icon/icon.png
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/icon/icon.png" # Ganti sesuai lokasi file gambar Anda
-  min_sdk_android: 21
-
-# --- KONFIGURASI TAMPILAN FLUTTER ---
 flutter:
   uses-material-design: true
 
-  # PENTING: Daftarkan file animasi Lottie di sini agar terbaca
+  # HANYA ASSET YANG WAJIB ADA
   assets:
     - assets/loading_ps.json
-    # - assets/images/  (Jika nanti ada gambar lain, buka komentar ini)
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#CDF6FF"
