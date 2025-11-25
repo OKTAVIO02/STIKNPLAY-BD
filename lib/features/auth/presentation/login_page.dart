@@ -1,287 +1,186 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
-// Import Cubit & Repository
-import 'auth_cubit.dart';
-import '../data/auth_repository.dart';
-
-// Import Halaman Tujuan
-import '../../home/presentation/home_page.dart';
-import '../../home/presentation/admin_dashboard_page.dart'; // Import Admin Dashboard
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // PENTING
 import 'register_page.dart';
+import '../../home/presentation/home_page.dart';
+import '../../home/presentation/admin_dashboard_page.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => AuthCubit(AuthRepository()),
-      child: const LoginView(),
-    );
-  }
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class LoginView extends StatefulWidget {
-  const LoginView({super.key});
-
-  @override
-  State<LoginView> createState() => _LoginViewState();
-}
-
-class _LoginViewState extends State<LoginView> {
+class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
-  bool _isPasswordVisible = false;
+  // --- FUNGSI LOGIN YANG DIPERBARUI ---
+  void _login() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Email dan Password wajib diisi!")));
+      return;
+    }
 
-  // --- KONFIGURASI ADMIN ---
-  // Pastikan email ini SAMA PERSIS dengan yang ada di splash_page.dart
-  final String adminEmail = "admin@gmail.com"; 
+    setState(() => _isLoading = true);
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      // Panggil fungsi login di Cubit
-      context.read<AuthCubit>().login(
-        _emailController.text.trim(), // trim() untuk hapus spasi tidak sengaja
-        _passwordController.text,
+    try {
+      // 1. Proses Login ke Authentication
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
+
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // 2. CEK APAKAH DATA USER ADA DI FIRESTORE?
+        // Ini solusi untuk akun lama yang belum masuk database
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+
+        if (!userDoc.exists) {
+          // JIKA BELUM ADA: Buat data baru sekarang juga!
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+            'uid': user.uid,
+            'email': user.email,
+            'displayName': user.displayName ?? user.email!.split('@')[0],
+            'phoneNumber': '-', // Default kosong
+            'role': 'user',     // Default user biasa
+            'createdAt': DateTime.now(),
+            'address': '-',
+          });
+        }
+
+        // 3. Ambil Role (Peran) User untuk Penentuan Halaman
+        String role = 'user';
+        // Kita ambil ulang data (karena barusan mungkin baru dibuat)
+        final freshDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        if (freshDoc.exists) {
+          role = freshDoc.data()?['role'] ?? 'user';
+        }
+
+        // 4. Arahkan Halaman (Admin vs User)
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ Login Berhasil!"), backgroundColor: Colors.green));
+          
+          // Cek Email Admin Manual (Backup) atau Role dari Database
+          const String adminEmail = "admin@gmail.com"; 
+          
+          if (user.email == adminEmail || role == 'admin') {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboardPage()));
+          } else {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
+          }
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = "Login Gagal";
+      if (e.code == 'user-not-found') message = "Email tidak terdaftar.";
+      else if (e.code == 'wrong-password') message = "Password salah.";
+      else if (e.code == 'invalid-email') message = "Format email salah.";
+      
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5), // Background abu-abu muda modern
-      body: BlocListener<AuthCubit, AuthState>(
-        listener: (context, state) {
-          if (state is AuthSuccess) {
-            // --- LOGIKA PEMISAHAN ADMIN VS USER ---
-            if (state.user.email == adminEmail) {
-              // JIKA ADMIN -> Ke Admin Dashboard
-              Navigator.pushReplacement(
-                context, 
-                MaterialPageRoute(builder: (context) => const AdminDashboardPage())
-              );
-            } else {
-              // JIKA USER BIASA -> Ke Home Page
-              Navigator.pushReplacement(
-                context, 
-                MaterialPageRoute(builder: (context) => const HomePage())
-              );
-            }
-          } else if (state is AuthFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Gagal: ${state.message}"),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-        },
-        child: Stack(
-          children: [
-            // --- BACKGROUND DECORATION (Lingkaran Biru) ---
-            Positioned(
-              top: -100,
-              left: -100,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  color: Colors.blue[800]!.withOpacity(0.2),
-                  shape: BoxShape.circle,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Icon Logo
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(color: Colors.blue[50], shape: BoxShape.circle),
+                  child: Icon(Icons.videogame_asset, size: 80, color: Colors.blue[800]),
                 ),
-              ),
-            ),
-            Positioned(
-              bottom: -50,
-              right: -50,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  color: Colors.blue[400]!.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
+                const SizedBox(height: 30),
+                
+                Text("Selamat Datang!", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue[900])),
+                const Text("Silakan login untuk melanjutkan", style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 40),
 
-            // --- KONTEN UTAMA ---
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
+                // Input Email
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: "Email",
+                    prefixIcon: const Icon(Icons.email_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Input Password
+                TextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Lupa Password
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {}, // Nanti bisa ditambah fitur lupa password
+                    child: const Text("Lupa Password?"),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Tombol Login
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _login,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[800],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 5,
+                    ),
+                    child: _isLoading 
+                      ? const CircularProgressIndicator(color: Colors.white) 
+                      : const Text("MASUK", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                // Link ke Register
+                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // 1. LOGO ICON
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.blue.withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.gamepad_rounded, // Ikon Stik PS
-                        size: 60,
-                        color: Colors.blue[800],
-                      ),
+                    const Text("Belum punya akun? "),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage()));
+                      },
+                      child: Text("Daftar Sekarang", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[800])),
                     ),
-                    const SizedBox(height: 24),
-
-                    // 2. JUDUL BRAND
-                    Text(
-                      "PS RENTAL PRO",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.blue[900],
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Sewa Console Terbaik, Main Sepuasnya",
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 40),
-
-                    // 3. FORM LOGIN (Card)
-                    Card(
-                      elevation: 8,
-                      shadowColor: Colors.black12,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(30.0),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            children: [
-                              // Input Email
-                              TextFormField(
-                                controller: _emailController,
-                                keyboardType: TextInputType.emailAddress,
-                                decoration: InputDecoration(
-                                  labelText: "Email Address",
-                                  prefixIcon: const Icon(Icons.email_outlined),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey[200]!),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) return 'Email wajib diisi';
-                                  if (!value.contains('@')) return 'Email tidak valid';
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 20),
-
-                              // Input Password
-                              TextFormField(
-                                controller: _passwordController,
-                                obscureText: !_isPasswordVisible,
-                                decoration: InputDecoration(
-                                  labelText: "Password",
-                                  prefixIcon: const Icon(Icons.lock_outline_rounded),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
-                                    onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
-                                  ),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey[200]!),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) return 'Password wajib diisi';
-                                  if (value.length < 6) return 'Minimal 6 karakter';
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 30),
-
-                              // Tombol Masuk
-                              BlocBuilder<AuthCubit, AuthState>(
-                                builder: (context, state) {
-                                  return SizedBox(
-                                    width: double.infinity,
-                                    height: 55,
-                                    child: ElevatedButton(
-                                      onPressed: state is AuthLoading ? null : _login,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue[800],
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                        elevation: 5,
-                                        shadowColor: Colors.blue.withOpacity(0.4),
-                                      ),
-                                      child: state is AuthLoading
-                                          ? const SizedBox(
-                                              height: 24, width: 24,
-                                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
-                                            )
-                                          : const Text(
-                                              "MASUK SEKARANG",
-                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
-                                            ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 20),
-
-                              // Link Daftar
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text("Belum punya akun?", style: TextStyle(color: Colors.grey)),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (context) => const RegisterPage()),
-                                      );
-                                    },
-                                    child: const Text("Daftar Disini", style: TextStyle(fontWeight: FontWeight.bold)),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 30),
-                    const Text("v1.0.0", style: TextStyle(color: Colors.grey, fontSize: 12)),
                   ],
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

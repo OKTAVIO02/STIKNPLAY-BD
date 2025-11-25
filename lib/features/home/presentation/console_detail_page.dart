@@ -40,9 +40,9 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
         if (state is BookingSuccess) {
           Navigator.pop(context); // Tutup Modal
           Navigator.pop(context); // Kembali ke Home
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ Konfirmasi Berhasil! Silakan datang ke rental."), backgroundColor: Colors.green));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ Pesanan Berhasil Dibuat!"), backgroundColor: Colors.green));
         } else if (state is BookingFailure) {
-          Navigator.pop(context); // Tutup Modal biar user bisa coba lagi
+          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal: ${state.message}"), backgroundColor: Colors.red));
         }
       },
@@ -75,7 +75,7 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
                     const SizedBox(height: 20),
                     const Text("Deskripsi", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    const Text("Nikmati pengalaman bermain game terbaik dengan konsol ini. Sudah termasuk 2 stik original, kabel HDMI, dan akun PS Plus.", style: TextStyle(color: Colors.black54, height: 1.5)),
+                    const Text("Nikmati pengalaman bermain game terbaik dengan konsol ini. Unit terawat, stik responsif, dan siap dimainkan!", style: TextStyle(color: Colors.black54, height: 1.5)),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -104,11 +104,26 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
 
   void _showBookingForm(BuildContext parentContext) {
     int duration = 1;
+    String selectedType = "Main di Tempat";
+    String selectedPayment = "Tunai / Cash"; 
+    
+    // Opsi Pembayaran
+    final List<String> paymentOptions = [
+      "Tunai / Cash",
+      "Transfer BCA (82736xxxxx)",
+      "Transfer BRI (1234xxxxx)",
+      "Transfer Mandiri (9988xxxxx)",
+      "E-Wallet DANA (0812xxxxx)",
+      "E-Wallet GoPay (0812xxxxx)",
+      "E-Wallet OVO (0812xxxxx)",
+    ];
+
     final user = FirebaseAuth.instance.currentUser;
     final bookingCubit = parentContext.read<BookingCubit>();
 
     showModalBottomSheet(
-      context: parentContext, isScrollControlled: true,
+      context: parentContext,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
         return StatefulBuilder(
@@ -121,55 +136,103 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Konfirmasi Pembayaran", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
+                  Center(child: Container(width: 50, height: 5, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)))),
+                  const SizedBox(height: 20),
+                  const Text("Konfirmasi Pesanan", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
                   
-                  // Info Transfer BCA
+                  // 1. OPSI DURASI
+                  Text("Durasi Sewa (${selectedType == 'Bawa Pulang' ? 'Paket Harian' : 'Per Jam'})", style: const TextStyle(color: Colors.grey)),
+                  Row(children: [
+                    IconButton(onPressed: () => duration > 1 ? setModalState(() => duration--) : null, icon: const Icon(Icons.remove_circle_outline, color: Colors.red)),
+                    Text("$duration Jam", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(onPressed: () => setModalState(() => duration++), icon: const Icon(Icons.add_circle_outline, color: Colors.green)),
+                  ]),
+                  const Divider(),
+
+                  // 2. OPSI TIPE SEWA
+                  const Text("Mau main dimana?", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: RadioListTile<String>(
+                          title: const Text("Main Sini", style: TextStyle(fontSize: 13)),
+                          value: "Main di Tempat", groupValue: selectedType, contentPadding: EdgeInsets.zero,
+                          onChanged: (val) => setModalState(() => selectedType = val!),
+                        ),
+                      ),
+                      Expanded(
+                        child: RadioListTile<String>(
+                          title: const Text("Bawa Pulang", style: TextStyle(fontSize: 13)),
+                          value: "Bawa Pulang", groupValue: selectedType, contentPadding: EdgeInsets.zero,
+                          onChanged: (val) => setModalState(() => selectedType = val!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  // 3. OPSI PEMBAYARAN (DROPDOWN)
+                  const Text("Metode Pembayaran", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.all(15), width: double.infinity,
-                    decoration: BoxDecoration(color: Colors.orange[50], borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(10)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedPayment,
+                        isExpanded: true,
+                        items: paymentOptions.map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Row(
+                              children: [
+                                Icon(value.contains("Tunai") ? Icons.money : (value.contains("BCA") || value.contains("BRI") || value.contains("Mandiri") ? Icons.account_balance : Icons.phone_android), size: 18, color: Colors.blue[800]),
+                                const SizedBox(width: 10),
+                                Text(value, style: const TextStyle(fontSize: 14)),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (newValue) => setModalState(() => selectedPayment = newValue!),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+
+                  // 4. TOTAL
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(10)),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("Silakan Transfer ke:", style: TextStyle(fontSize: 12)),
-                        const Text("BCA 123-456-7890 (Admin PS Rental)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        const Divider(),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("Total Bayar:"),
-                            Text(currencyFormatter.format(totalPrice), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 16)),
-                          ],
-                        )
+                        const Text("Total Bayar:", style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(currencyFormatter.format(totalPrice), style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[900], fontSize: 18)),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
-                  // Input Durasi
-                  const Text("Durasi Sewa"),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    IconButton(onPressed: () => duration > 1 ? setModalState(() => duration--) : null, icon: const Icon(Icons.remove_circle_outline)),
-                    Text("$duration Jam", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    IconButton(onPressed: () => setModalState(() => duration++), icon: const Icon(Icons.add_circle_outline)),
-                  ]),
-                  const SizedBox(height: 24),
 
-                  // Tombol Bayar
+                  // TOMBOL
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
                         final bookingData = BookingModel(
-                          consoleId: widget.console.id, consoleName: widget.console.name, userName: user?.email ?? "Tamu",
-                          bookingDate: DateTime.now(), durationHours: duration, totalPrice: totalPrice,
+                          consoleId: widget.console.id, 
+                          consoleName: widget.console.name, 
+                          userName: user?.email ?? "Tamu",
+                          bookingDate: DateTime.now(), 
+                          durationHours: duration, 
+                          totalPrice: totalPrice,
+                          rentalType: selectedType, 
+                          paymentMethod: selectedPayment, 
                         );
-                        // Submit Pesanan
                         bookingCubit.submitBooking(bookingData);
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[800], padding: const EdgeInsets.symmetric(vertical: 15)),
-                      child: const Text("SAYA SUDAH BAYAR", style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[800], padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      child: const Text("BUAT PESANAN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],

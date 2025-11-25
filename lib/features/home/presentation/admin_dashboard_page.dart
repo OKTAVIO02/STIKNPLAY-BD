@@ -16,52 +16,34 @@ import '../../auth/presentation/login_page.dart';
 import 'add_console_page.dart';
 import 'console_detail_page.dart';
 import 'edit_console_page.dart'; 
-import 'admin_sub_pages.dart'; // Pastikan file admin_sub_pages.dart sudah ada
+import 'admin_sub_pages.dart'; 
+
+// IMPORT LOADING WIDGET
+import '../../../../core/presentation/ps_loading_widget.dart';
 
 // ============================================================================
-// 1. CLASS UTAMA DASHBOARD
+// 1. MAIN DASHBOARD
 // ============================================================================
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
-
   @override
   State<AdminDashboardPage> createState() => _AdminDashboardPageState();
 }
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   int _currentIndex = 0; 
-
-  // Daftar Halaman Tab
-  final List<Widget> _pages = [
-    const AdminBookingTab(),   
-    const AdminInventoryTab(), 
-    const AdminAccountTab(),   
-  ];
+  final List<Widget> _pages = [const AdminBookingTab(), const AdminInventoryTab(), const AdminAccountTab()];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)],
-        ),
+        decoration: BoxDecoration(color: Theme.of(context).cardColor, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)]),
         child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Theme.of(context).cardColor,
-          selectedItemColor: Colors.blue[800], 
-          unselectedItemColor: Colors.grey[400],
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.assignment_rounded), label: "Pesanan"),
-            BottomNavigationBarItem(icon: Icon(Icons.videogame_asset_rounded), label: "Inventory"),
-            BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "Admin"),
-          ],
+          currentIndex: _currentIndex, onTap: (index) => setState(() => _currentIndex = index),
+          type: BottomNavigationBarType.fixed, backgroundColor: Theme.of(context).cardColor, selectedItemColor: Colors.blue[800], unselectedItemColor: Colors.grey[400],
+          items: const [BottomNavigationBarItem(icon: Icon(Icons.assignment_rounded), label: "Pesanan"), BottomNavigationBarItem(icon: Icon(Icons.videogame_asset_rounded), label: "Inventory"), BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "Admin")],
         ),
       ),
     );
@@ -69,7 +51,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 }
 
 // ============================================================================
-// 2. TAB PESANAN (BERSIH TANPA GAMBAR)
+// 2. ADMIN BOOKING TAB (LENGKAP DENGAN INFO PEMBAYARAN)
 // ============================================================================
 class AdminBookingTab extends StatelessWidget {
   const AdminBookingTab({super.key});
@@ -79,30 +61,14 @@ class AdminBookingTab extends StatelessWidget {
     return BlocProvider(
       create: (context) => HistoryCubit(BookingRepository()), 
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Pesanan Masuk", style: TextStyle(fontWeight: FontWeight.bold)), 
-          centerTitle: true
-        ),
+        appBar: AppBar(title: const Text("Pesanan Masuk", style: TextStyle(fontWeight: FontWeight.bold)), centerTitle: true),
         body: StreamBuilder<List<BookingModel>>(
           stream: BookingRepository().getAllActiveBookings(),
           builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) return const PsLoadingWidget(size: 100);
             if (snapshot.hasError) return Center(child: Text("Error: ${snapshot.error}"));
-            if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-
             final bookings = snapshot.data ?? [];
-
-            if (bookings.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.check_circle_outline, size: 80, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text("Tidak ada pesanan aktif.", style: TextStyle(color: Colors.grey)),
-                  ],
-                ),
-              );
-            }
+            if (bookings.isEmpty) return const Center(child: Text("Tidak ada pesanan aktif."));
 
             return ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -110,36 +76,48 @@ class AdminBookingTab extends StatelessWidget {
               itemBuilder: (context, index) {
                 final booking = bookings[index];
                 final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-                final dateFormat = DateFormat('dd MMM, HH:mm');
                 
+                // Logika Warna Label
+                final isTakeAway = booking.rentalType == 'Bawa Pulang';
+                final labelColor = isTakeAway ? Colors.purple : Colors.blue;
+                final labelBg = isTakeAway ? Colors.purple[50] : Colors.blue[50];
+
                 return Card(
                   color: Theme.of(context).cardColor,
-                  elevation: 2, 
-                  margin: const EdgeInsets.only(bottom: 12), 
+                  elevation: 3, margin: const EdgeInsets.only(bottom: 16), 
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Header: Nama Console & Label Tipe
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween, 
                           children: [
-                            Text(booking.consoleName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), 
+                            Expanded(child: Text(booking.consoleName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), 
-                              decoration: BoxDecoration(color: Colors.orange[50], borderRadius: BorderRadius.circular(6)), 
-                              child: const Text("DISEWA", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 10))
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), 
+                              decoration: BoxDecoration(color: labelBg, borderRadius: BorderRadius.circular(8)), 
+                              child: Text(booking.rentalType, style: TextStyle(color: labelColor, fontWeight: FontWeight.bold, fontSize: 10))
                             )
                           ]
                         ),
+                        const SizedBox(height: 8),
                         const Divider(),
-                        Text("Penyewa: ${booking.userName}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text("Mulai: ${dateFormat.format(booking.bookingDate)}"),
-                        Text("Total: ${currencyFormatter.format(booking.totalPrice)}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                        
+                        // INFO LENGKAP
+                        _buildRowInfo(Icons.person, "Penyewa", booking.userName),
+                        const SizedBox(height: 6),
+                        _buildRowInfo(Icons.payment, "Pembayaran", booking.paymentMethod, isBold: true, color: Colors.orange[800]!), 
+                        const SizedBox(height: 6),
+                        _buildRowInfo(Icons.monetization_on, "Total", currencyFormatter.format(booking.totalPrice), color: Colors.green[700]!),
+                        
+                        const SizedBox(height: 16),
+                        Center(child: _RentalTimerWidget(bookingDate: booking.bookingDate, durationHours: booking.durationHours)),
                         const SizedBox(height: 16),
                         
-                        // TOMBOL TERIMA PENGEMBALIAN (Tanpa Lihat Bukti)
+                        // Tombol Aksi
                         SizedBox(
                           width: double.infinity, 
                           child: ElevatedButton.icon(
@@ -148,26 +126,17 @@ class AdminBookingTab extends StatelessWidget {
                                 context: context,
                                 builder: (dialogContext) => AlertDialog(
                                   title: const Text("Selesaikan Sewa?"),
-                                  content: Text("Pastikan unit '${booking.consoleName}' sudah kembali dan pembayaran lunas."),
+                                  content: Text("Pastikan unit '${booking.consoleName}' sudah kembali dan pembayaran LUNAS."),
                                   actions: [
                                     TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text("Batal")),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                                      onPressed: () {
-                                        Navigator.pop(dialogContext);
-                                        // Panggil fungsi Return Unit
-                                        context.read<HistoryCubit>().returnUnit(booking.id!, booking.consoleId);
-                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ Unit dikembalikan ke stok.")));
-                                      },
-                                      child: const Text("Ya, Selesai"),
-                                    )
+                                    ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white), onPressed: () { Navigator.pop(dialogContext); context.read<HistoryCubit>().returnUnit(booking.id!, booking.consoleId); }, child: const Text("Ya, Selesai"))
                                   ],
                                 ),
                               );
                             }, 
                             icon: const Icon(Icons.check_circle),
                             label: const Text("TERIMA PENGEMBALIAN"),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[800], foregroundColor: Colors.white),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[800], foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
                           )
                         )
                       ],
@@ -181,96 +150,52 @@ class AdminBookingTab extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildRowInfo(IconData icon, String label, String value, {bool isBold = false, Color color = Colors.black87}) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey),
+        const SizedBox(width: 8),
+        Text("$label: ", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Expanded(child: Text(value, style: TextStyle(fontSize: 13, fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: color), overflow: TextOverflow.ellipsis)),
+      ],
+    );
+  }
 }
 
 // ============================================================================
-// 3. TAB INVENTORY (KELOLA UNIT)
+// 3. INVENTORY TAB
 // ============================================================================
 class AdminInventoryTab extends StatelessWidget {
   const AdminInventoryTab({super.key});
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => HomeCubit(HomeRepository())..loadConsoles(), 
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Kelola Unit", style: TextStyle(fontWeight: FontWeight.bold)), 
-          centerTitle: true
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: (){ 
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const AddConsolePage())); 
-          }, 
-          backgroundColor: Colors.blue[800],
-          child: const Icon(Icons.add, color: Colors.white)
-        ),
+        appBar: AppBar(title: const Text("Kelola Unit", style: TextStyle(fontWeight: FontWeight.bold)), centerTitle: true),
+        floatingActionButton: FloatingActionButton(onPressed: (){ Navigator.push(context, MaterialPageRoute(builder: (context) => const AddConsolePage())); }, backgroundColor: Colors.blue[800], child: const Icon(Icons.add, color: Colors.white)),
         body: BlocBuilder<HomeCubit, HomeState>(
           builder: (context, state) {
+            if (state is HomeLoading) return const PsLoadingWidget(size: 100);
             if (state is HomeLoaded) {
-              if (state.consoles.isEmpty) {
-                return const Center(child: Text("Belum ada unit console."));
-              }
-
+              if (state.consoles.isEmpty) return const Center(child: Text("Belum ada unit console."));
               return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: state.consoles.length,
+                padding: const EdgeInsets.all(16), itemCount: state.consoles.length,
                 itemBuilder: (context, index) {
                   final console = state.consoles[index];
                   return Card(
-                    color: Theme.of(context).cardColor,
-                    elevation: 2,
-                    margin: const EdgeInsets.only(bottom: 10),
+                    color: Theme.of(context).cardColor, elevation: 2, margin: const EdgeInsets.only(bottom: 10),
                     child: ListTile(
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          console.imageUrl, 
-                          width: 50, 
-                          height: 50, 
-                          fit: BoxFit.cover, 
-                          errorBuilder: (c,o,s) => const Icon(Icons.error)
-                        ),
-                      ),
-                      title: Text(console.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text(console.type),
-                      trailing: PopupMenuButton(
-                        itemBuilder: (c) => [
-                          PopupMenuItem(
-                            child: const Row(children: [Icon(Icons.edit, color: Colors.blue), SizedBox(width: 8), Text("Edit")]), 
-                            onTap: () => Future.delayed(Duration.zero, () => Navigator.push(context, MaterialPageRoute(builder: (context) => EditConsolePage(console: console))))
-                          ),
-                          PopupMenuItem(
-                            child: const Row(children: [Icon(Icons.delete, color: Colors.red), SizedBox(width: 8), Text("Hapus")]), 
-                            onTap: () => showDialog(
-                              context: context, 
-                              builder: (ctx) => AlertDialog(
-                                title: const Text("Hapus?"), 
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")), 
-                                  TextButton(
-                                    onPressed: () { 
-                                      Navigator.pop(ctx); 
-                                      // Logic Hapus
-                                      HomeRepository().deleteConsole(console.id); 
-                                      // Refresh List (Manual trigger)
-                                      context.read<HomeCubit>().loadConsoles();
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Unit dihapus")));
-                                    }, 
-                                    child: const Text("Hapus", style: TextStyle(color: Colors.red))
-                                  )
-                                ]
-                              )
-                            )
-                          ),
-                        ]
-                      ),
+                      leading: ClipRRect(borderRadius: BorderRadius.circular(8), child: CachedNetworkImage(imageUrl: console.imageUrl, width: 50, height: 50, fit: BoxFit.cover, errorWidget: (c,o,s) => const Icon(Icons.error))),
+                      title: Text(console.name, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(console.type),
+                      trailing: PopupMenuButton(itemBuilder: (c) => [PopupMenuItem(child: const Text("Edit"), onTap: () => Future.delayed(Duration.zero, () => Navigator.push(context, MaterialPageRoute(builder: (context) => EditConsolePage(console: console))))), PopupMenuItem(child: const Text("Hapus"), onTap: () => showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Hapus?"), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")), TextButton(onPressed: () { Navigator.pop(ctx); HomeRepository().deleteConsole(console.id); context.read<HomeCubit>().loadConsoles(); }, child: const Text("Hapus", style: TextStyle(color: Colors.red)))])))]),
                     ),
                   );
                 },
               );
             }
-            return const Center(child: CircularProgressIndicator());
+            return const SizedBox();
           },
         ),
       ),
@@ -279,180 +204,39 @@ class AdminInventoryTab extends StatelessWidget {
 }
 
 // ============================================================================
-// 4. TAB ADMIN ACCOUNT (PROFIL ADMIN)
+// 4. ADMIN ACCOUNT TAB
 // ============================================================================
 class AdminAccountTab extends StatelessWidget {
   const AdminAccountTab({super.key});
-
-  void _handleLogout(BuildContext context) async {
-    bool confirm = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Keluar?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Batal")),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await FirebaseAuth.instance.signOut();
-              if (context.mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context, 
-                  MaterialPageRoute(builder: (context) => const LoginPage()), 
-                  (route) => false
-                );
-              }
-            },
-            child: const Text("Keluar", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    ) ?? false;
-  }
-
+  void _handleLogout(BuildContext context) async { await FirebaseAuth.instance.signOut(); if (context.mounted) Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginPage()), (route) => false); }
   @override
   Widget build(BuildContext context) {
     final userEmail = FirebaseAuth.instance.currentUser?.email ?? "Admin";
-
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header
-            Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                Container(
-                  height: 260,
-                  margin: const EdgeInsets.only(bottom: 50),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue[900]!, Colors.blue[600]!],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
-                  ),
-                  child: const SafeArea(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text("Control Panel", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                              Text("Dashboard Admin", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          Icon(Icons.notifications_none, color: Colors.white),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                
-                Container(
-                  width: MediaQuery.of(context).size.width * 0.85,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))],
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 30, 
-                        backgroundColor: Colors.blue[100], 
-                        child: const Icon(Icons.admin_panel_settings, size: 30, color: Colors.blue)
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(userEmail, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis),
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(4)),
-                              child: Text("Super Admin", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green[700])),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // Menu
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  _buildAdminMenuTile(context, icon: Icons.storefront_rounded, title: "Informasi Rental", subtitle: "Ubah nama & kontak", onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminRentalInfoPage()));
-                  }),
-                  const SizedBox(height: 12),
-                  _buildAdminMenuTile(context, icon: Icons.people_outline_rounded, title: "Manajemen User", subtitle: "Daftar penyewa", onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminUserManagementPage()));
-                  }),
-                  const SizedBox(height: 12),
-                  _buildAdminMenuTile(context, icon: Icons.settings_applications_rounded, title: "Konfigurasi Sistem", subtitle: "Maintenance mode", onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminSystemConfigPage()));
-                  }),
-                  const SizedBox(height: 30),
-                  _buildAdminMenuTile(context, icon: Icons.help_outline_rounded, title: "Pusat Bantuan Admin", color: Colors.orange, onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminHelpCenterPage()));
-                  }),
-                  
-                  const SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _handleLogout(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).cardColor,
-                        foregroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        side: const BorderSide(color: Colors.red),
-                      ),
-                      icon: const Icon(Icons.logout_rounded),
-                      label: const Text("Keluar Akun Admin"),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                ],
-              ),
-            ),
+            Container(height: 200, decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.blue[900]!, Colors.blue[600]!]), borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30))), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [const CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.admin_panel_settings, size: 30, color: Colors.blue)), const SizedBox(height: 10), Text(userEmail, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), Container(margin: const EdgeInsets.only(top: 5), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2), decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(10)), child: const Text("Super Admin", style: TextStyle(color: Colors.white, fontSize: 10)))]))),
+            Padding(padding: const EdgeInsets.all(20), child: Column(children: [_buildAdminMenuTile(context, icon: Icons.storefront_rounded, title: "Informasi Rental", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminRentalInfoPage()))), const SizedBox(height: 10), _buildAdminMenuTile(context, icon: Icons.people_outline_rounded, title: "Manajemen User", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminUserManagementPage()))), const SizedBox(height: 10), _buildAdminMenuTile(context, icon: Icons.settings_applications_rounded, title: "Konfigurasi Sistem", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminSystemConfigPage()))), const SizedBox(height: 30), SizedBox(width: double.infinity, child: ElevatedButton.icon(onPressed: () => _handleLogout(context), style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)), icon: const Icon(Icons.logout), label: const Text("Keluar Akun")))])),
           ],
         ),
       ),
     );
   }
+  Widget _buildAdminMenuTile(BuildContext context, {required IconData icon, required String title, required VoidCallback onTap}) { return ListTile(onTap: onTap, leading: Icon(icon, color: Colors.blue), title: Text(title), trailing: const Icon(Icons.arrow_forward_ios, size: 16)); }
+}
 
-  Widget _buildAdminMenuTile(BuildContext context, {required IconData icon, required String title, String? subtitle, required VoidCallback onTap, Color color = Colors.blue}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 2))],
-      ),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color)),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-        subtitle: subtitle != null ? Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)) : null,
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
-      ),
-    );
+class _RentalTimerWidget extends StatelessWidget {
+  final DateTime bookingDate;
+  final int durationHours;
+  const _RentalTimerWidget({required this.bookingDate, required this.durationHours});
+  @override
+  Widget build(BuildContext context) {
+    final DateTime endTime = bookingDate.add(Duration(hours: durationHours));
+    return StreamBuilder(stream: Stream.periodic(const Duration(seconds: 1), (i) => i), builder: (context, snapshot) {
+      final now = DateTime.now(); final difference = endTime.difference(now); final isOverdue = difference.isNegative; final durationShow = isOverdue ? difference.abs() : difference;
+      String twoDigits(int n) => n.toString().padLeft(2, '0'); final hours = twoDigits(durationShow.inHours); final minutes = twoDigits(durationShow.inMinutes.remainder(60)); final seconds = twoDigits(durationShow.inSeconds.remainder(60));
+      return Container(width: double.infinity, padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: isOverdue ? Colors.red[50] : Colors.blue[50], borderRadius: BorderRadius.circular(8), border: Border.all(color: isOverdue ? Colors.red : Colors.blue)), child: Column(children: [Text(isOverdue ? "TERLAMBAT" : "SISA WAKTU", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isOverdue ? Colors.red : Colors.blue)), Text("${isOverdue ? '+' : ''}$hours:$minutes:$seconds", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: isOverdue ? Colors.red[900] : Colors.blue[900]))]));
+    });
   }
 }

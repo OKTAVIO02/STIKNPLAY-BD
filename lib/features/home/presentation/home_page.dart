@@ -5,35 +5,49 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Import Logic & Data
+// --- IMPORT LOGIC & DATA ---
 import 'home_cubit.dart';
 import '../data/home_repository.dart';
 import '../data/console_model.dart';
 
-// Import Halaman Lain
+// --- IMPORT HALAMAN LAIN ---
 import 'console_detail_page.dart';
 import '../../booking/presentation/history_page.dart';
 import '../../auth/presentation/login_page.dart';
 import 'admin_dashboard_page.dart';
-import 'profile_sub_pages.dart'; 
+import 'profile_sub_pages.dart'; // Pastikan file ini ada
 
-// IMPORT LOADING WIDGET BARU
+// --- IMPORT WIDGET LOADING (Opsional) ---
+// Jika belum ada file ini, hapus baris ini dan ganti PsLoadingWidget dengan CircularProgressIndicator
 import '../../../../core/presentation/ps_loading_widget.dart';
 
+// ============================================================================
+// MAIN WIDGET: HOME PAGE (CONTAINER UTAMA)
+// ============================================================================
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
-  final List<Widget> _pages = [const HomeTab(), const HistoryPage(), const ProfileTab()];
+
+  // Daftar Halaman untuk Bottom Navigation Bar
+  final List<Widget> _pages = [
+    const HomeTab(),
+    const HistoryPage(),
+    const ProfileTab(), // Tab Profil yang sudah Terkoneksi Database
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _pages),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
@@ -47,6 +61,7 @@ class _HomePageState extends State<HomePage> {
           selectedItemColor: Colors.blue[800],
           unselectedItemColor: Colors.grey,
           showUnselectedLabels: true,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Beranda"),
             BottomNavigationBarItem(icon: Icon(Icons.history_edu_rounded), label: "Riwayat"),
@@ -58,92 +73,166 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// --- HOME TAB ---
+// ============================================================================
+// TAB 1: HOME TAB (LENGKAP: INFO TOKO + BANNER + CONSOLES + GAMES)
+// ============================================================================
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    // Nama sementara sebelum data asli termuat (opsional)
     final userName = user?.displayName ?? (user?.email?.split('@')[0] ?? "Gamers");
 
     return BlocProvider(
       create: (context) => HomeCubit(HomeRepository())..loadConsoles(),
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Column(
-          children: [
-            Stack(
-              children: [
-                Container(
-                  height: 240,
-                  padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [Colors.blue[900]!, Colors.blue[600]!], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(35)),
-                    boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 8))],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Halo, ${userName.toUpperCase()}", style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 1)),
-                              const SizedBox(height: 5),
-                              const Text("Mau main apa hari ini?", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
-                            ],
-                          ),
-                          Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle, border: Border.all(color: Colors.white.withOpacity(0.3))), child: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 28))
-                        ],
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- HEADER & INFO TOKO (Dari Collection 'settings') ---
+              Stack(
+                children: [
+                  Container(
+                    height: 260,
+                    padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue[900]!, Colors.blue[600]!], 
+                        begin: Alignment.topLeft, end: Alignment.bottomRight
                       ),
-                      const SizedBox(height: 25),
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance.collection('settings').doc('store_info').snapshots(),
-                        builder: (context, snapshot) {
-                          String shopName = "PS Rental Pro";
-                          String shopAddress = "Jakarta, Indonesia";
-                          if (snapshot.hasData && snapshot.data!.exists) {
-                            final data = snapshot.data!.data() as Map<String, dynamic>;
-                            shopName = data['name'] ?? shopName;
-                            shopAddress = data['address'] ?? shopAddress;
-                          }
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(15)),
-                            child: Row(
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(35)),
+                      boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 8))],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.location_on, color: Colors.white, size: 18),
-                                const SizedBox(width: 10),
-                                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(shopName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)), Text(shopAddress, style: const TextStyle(color: Colors.white70, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)])),
+                                Text("Halo, ${userName.toUpperCase()}", style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 1)),
+                                const SizedBox(height: 5),
+                                const Text("Mau main apa?", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
                               ],
                             ),
-                          );
-                        },
-                      ),
-                    ],
+                            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle, border: Border.all(color: Colors.white.withOpacity(0.3))), child: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 28))
+                          ],
+                        ),
+                        const SizedBox(height: 25),
+                        
+                        // STREAM BUILDER KE COLLECTION 'SETTINGS'
+                        StreamBuilder<DocumentSnapshot>(
+                          stream: FirebaseFirestore.instance.collection('settings').doc('store_info').snapshots(),
+                          builder: (context, snapshot) {
+                            String shopName = "PS Rental Pro";
+                            String shopAddress = "Jakarta, Indonesia";
+                            
+                            if (snapshot.hasData && snapshot.data!.exists) {
+                              final data = snapshot.data!.data() as Map<String, dynamic>;
+                              shopName = data['name'] ?? shopName;
+                              shopAddress = data['address'] ?? shopAddress;
+                            }
+                            
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(15)),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.location_on, color: Colors.white, size: 18),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start, 
+                                      children: [
+                                        Text(shopName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)), 
+                                        Text(shopAddress, style: const TextStyle(color: Colors.white70, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)
+                                      ]
+                                    )
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            Transform.translate(offset: const Offset(0, -25), child: const Padding(padding: EdgeInsets.symmetric(horizontal: 24), child: _SearchWidget())),
-            
-            // --- LIST CONSOLE DENGAN LOADING BARU ---
-            Expanded(
-              child: BlocBuilder<HomeCubit, HomeState>(
+                ],
+              ),
+              
+              // SEARCH BAR
+              Transform.translate(offset: const Offset(0, -25), child: const Padding(padding: EdgeInsets.symmetric(horizontal: 24), child: _SearchWidget())),
+              
+              // --- BANNER PROMO (Dari Collection 'banners') ---
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text("Promo Spesial 🔥", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 10),
+              
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('banners').where('isActive', isEqualTo: true).snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Container(
+                      height: 140, margin: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(15)),
+                      child: const Center(child: Text("Belum ada promo", style: TextStyle(color: Colors.grey))),
+                    );
+                  }
+                  return SizedBox(
+                    height: 160,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      itemCount: snapshot.data!.docs.length,
+                      itemBuilder: (context, index) {
+                        var data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                        return Container(
+                          width: 280,
+                          margin: const EdgeInsets.symmetric(horizontal: 5),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(15),
+                            image: DecorationImage(
+                              image: NetworkImage(data['imageUrl'] ?? ''),
+                              fit: BoxFit.cover,
+                            ),
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5, offset: const Offset(0, 2))]
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 25),
+
+              // --- DAFTAR CONSOLE (Dari Cubit/Collection 'consoles') ---
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text("Pilih Console", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 10),
+
+              BlocBuilder<HomeCubit, HomeState>(
                 builder: (context, state) {
-                  // GUNAKAN LOADING WIDGET DISINI
-                  if (state is HomeLoading) {
-                    return const PsLoadingWidget(size: 200); 
-                  } 
+                  // LOADING
+                  if (state is HomeLoading) return const Padding(padding: EdgeInsets.all(20.0), child: PsLoadingWidget(size: 100)); 
                   
                   if (state is HomeLoaded) {
                     if (state.consoles.isEmpty) return const Center(child: Text("Unit Kosong"));
+                    
                     return GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      shrinkWrap: true, 
+                      physics: const NeverScrollableScrollPhysics(),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.75, crossAxisSpacing: 16, mainAxisSpacing: 16),
                       itemCount: state.consoles.length,
                       itemBuilder: (context, index) => _buildCard(context, state.consoles[index]),
@@ -152,15 +241,68 @@ class HomeTab extends StatelessWidget {
                   return const SizedBox();
                 },
               ),
-            ),
-          ],
+
+              const SizedBox(height: 25),
+
+              // --- KOLEKSI GAME (Dari Collection 'games') ---
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text("Koleksi Game 🎮", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 10),
+
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('games').snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Padding(padding: EdgeInsets.only(left: 20, bottom: 30), child: Text("Belum ada data game."));
+                  }
+                  return SizedBox(
+                    height: 140,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      itemCount: snapshot.data!.docs.length,
+                      itemBuilder: (context, index) {
+                        var data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                        return Container(
+                          width: 100,
+                          margin: const EdgeInsets.symmetric(horizontal: 5),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: CachedNetworkImage(
+                                  imageUrl: data['imageUrl'] ?? '',
+                                  height: 100, width: 100, fit: BoxFit.cover,
+                                  placeholder: (c, u) => Container(color: Colors.grey[200]),
+                                  errorWidget: (c, u, e) => const Icon(Icons.error),
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(data['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text(data['genre'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// --- PROFILE TAB ---
+// ============================================================================
+// TAB 3: PROFILE TAB (TERKONEKSI KE COLLECTION 'USERS')
+// ============================================================================
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
 
@@ -168,8 +310,8 @@ class ProfileTab extends StatelessWidget {
     bool confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("Keluar Aplikasi?"),
+        content: const Text("Anda harus login kembali untuk menyewa."),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Batal")),
           ElevatedButton(
@@ -189,59 +331,91 @@ class ProfileTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final userEmail = user?.email ?? "Tamu";
-    const String adminEmail = "admin@gmail.com"; 
-    final bool isAdmin = userEmail == adminEmail;
+    if (user == null) return const Center(child: Text("Silakan Login"));
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(top: 70, bottom: 40),
-              decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1976D2)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: const BorderRadius.vertical(bottom: Radius.circular(40)), boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 10))]),
-              child: Column(
-                children: [
-                  Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 5))]), child: CircleAvatar(radius: 55, backgroundColor: const Color(0xFFE3F2FD), child: Text(userEmail.isNotEmpty ? userEmail[0].toUpperCase() : "G", style: const TextStyle(fontSize: 50, color: Color(0xFF1565C0), fontWeight: FontWeight.w900)))),
-                  const SizedBox(height: 16),
-                  Text(userEmail, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
-                  const SizedBox(height: 12),
-                  Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5)]), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(isAdmin ? Icons.verified_user : Icons.check_circle, size: 18, color: isAdmin ? Colors.red[700] : Colors.blue[700]), const SizedBox(width: 8), Text(isAdmin ? "ADMINISTRATOR" : "VERIFIED MEMBER", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: isAdmin ? Colors.red[700] : Colors.blue[900], letterSpacing: 1))])),
-                ],
-              ),
+    // --- MENGAMBIL DATA DARI COLLECTION 'USERS' BERDASARKAN UID ---
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, snapshot) {
+        
+        // Nilai Default (Jika data belum loading/kosong)
+        String displayName = user.email?.split('@')[0] ?? "User";
+        String role = "user";
+        String displayEmail = user.email ?? "";
+
+        // Jika Data Ditemukan
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          displayName = data['displayName'] ?? displayName;
+          role = data['role'] ?? "user";
+        }
+
+        final bool isAdmin = role == 'admin';
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF0F2F5),
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                // HEADER PROFIL
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.only(top: 70, bottom: 40),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1976D2)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(40)),
+                    boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 10))],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 5))]), child: CircleAvatar(radius: 55, backgroundColor: const Color(0xFFE3F2FD), child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : "U", style: const TextStyle(fontSize: 50, color: Color(0xFF1565C0), fontWeight: FontWeight.w900)))),
+                      const SizedBox(height: 16),
+                      Text(displayName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
+                      Text(displayEmail, style: const TextStyle(fontSize: 14, color: Colors.white70)),
+                      const SizedBox(height: 12),
+                      Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5)]), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(isAdmin ? Icons.verified_user : Icons.account_circle, size: 18, color: isAdmin ? Colors.red[700] : Colors.blue[700]), const SizedBox(width: 8), Text(isAdmin ? "ADMINISTRATOR" : "VERIFIED MEMBER", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: isAdmin ? Colors.red[700] : Colors.blue[900], letterSpacing: 1))])),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 25),
+
+                // MENU LIST
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      // MENU ADMIN (Hanya muncul jika role di database 'users' = 'admin')
+                      if (isAdmin) 
+                        Padding(padding: const EdgeInsets.only(bottom: 15), child: _buildProfileCard(context, icon: Icons.admin_panel_settings_rounded, title: "Dashboard Admin", subtitle: "Panel Kontrol", iconColor: Colors.white, iconBgColor: Colors.redAccent, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminDashboardPage())))),
+
+                      _buildProfileCard(context, icon: Icons.settings_rounded, title: "Pengaturan", subtitle: "Tema & Notifikasi", iconColor: Colors.white, iconBgColor: Colors.blueAccent, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsPage()))),
+                      const SizedBox(height: 15),
+                      _buildProfileCard(context, icon: Icons.headset_mic_rounded, title: "Pusat Bantuan", subtitle: "FAQ", iconColor: Colors.white, iconBgColor: Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpCenterPage()))),
+                      const SizedBox(height: 15),
+                      _buildProfileCard(context, icon: Icons.verified_user_rounded, title: "Kebijakan Privasi", subtitle: "Ketentuan", iconColor: Colors.white, iconBgColor: Colors.green, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()))),
+                      
+                      const SizedBox(height: 40),
+                      SizedBox(width: double.infinity, height: 55, child: ElevatedButton.icon(onPressed: () => _handleLogout(context), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), foregroundColor: Colors.white, elevation: 5, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))), icon: const Icon(Icons.logout_rounded, size: 24), label: const Text("KELUAR AKUN", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)))),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 25),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  if (isAdmin) Padding(padding: const EdgeInsets.only(bottom: 15), child: _buildProfileCard(context, icon: Icons.admin_panel_settings_rounded, title: "Dashboard Admin", subtitle: "Panel Kontrol", iconColor: Colors.white, iconBgColor: Colors.redAccent, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminDashboardPage())))),
-                  _buildProfileCard(context, icon: Icons.settings_rounded, title: "Pengaturan", subtitle: "Tema & Notifikasi", iconColor: Colors.white, iconBgColor: Colors.blueAccent, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsPage()))),
-                  const SizedBox(height: 15),
-                  _buildProfileCard(context, icon: Icons.headset_mic_rounded, title: "Pusat Bantuan", subtitle: "FAQ", iconColor: Colors.white, iconBgColor: Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpCenterPage()))),
-                  const SizedBox(height: 15),
-                  _buildProfileCard(context, icon: Icons.verified_user_rounded, title: "Kebijakan Privasi", subtitle: "Ketentuan", iconColor: Colors.white, iconBgColor: Colors.green, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()))),
-                  const SizedBox(height: 40),
-                  SizedBox(width: double.infinity, height: 55, child: ElevatedButton.icon(onPressed: () => _handleLogout(context), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), foregroundColor: Colors.white, elevation: 5, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))), icon: const Icon(Icons.logout_rounded, size: 24), label: const Text("KELUAR AKUN", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)))),
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildProfileCard(BuildContext context, {required IconData icon, required String title, required String subtitle, required VoidCallback onTap, required Color iconColor, required Color iconBgColor}) {
     return Container(
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.15), blurRadius: 10, offset: const Offset(0, 5))]),
       child: ListTile(
         onTap: onTap, contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         leading: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: iconBgColor, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: iconBgColor.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))]), child: Icon(icon, color: iconColor, size: 24)),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
         subtitle: Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
       ),
@@ -249,7 +423,7 @@ class ProfileTab extends StatelessWidget {
   }
 }
 
-// --- WIDGETS ---
+// --- WIDGETS PENDUKUNG ---
 class _SearchWidget extends StatelessWidget {
   const _SearchWidget();
   @override
