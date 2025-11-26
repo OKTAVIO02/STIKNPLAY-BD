@@ -38,8 +38,8 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
     return BlocListener<BookingCubit, BookingState>(
       listener: (context, state) {
         if (state is BookingSuccess) {
-          Navigator.pop(context); // Tutup Modal
-          Navigator.pop(context); // Kembali ke Home
+          Navigator.pop(context);
+          Navigator.pop(context); 
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ Pesanan Berhasil Dibuat!"), backgroundColor: Colors.green));
         } else if (state is BookingFailure) {
           Navigator.pop(context);
@@ -73,9 +73,27 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
                       ],
                     ),
                     const SizedBox(height: 20),
+                    
+                    // INFO HARGA PAKET (Agar User Tahu)
+                    Container(
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.blue[200]!)),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("💰 Daftar Harga Rental", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Divider(),
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text("Main Sini (Per Jam)"), Text("Harga Normal")]),
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text("Bawa Pulang (12 Jam)"), Text("Rp 45.000")]),
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text("Bawa Pulang (24 Jam)"), Text("Rp 80.000")]),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
                     const Text("Deskripsi", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    const Text("Nikmati pengalaman bermain game terbaik dengan konsol ini. Unit terawat, stik responsif, dan siap dimainkan!", style: TextStyle(color: Colors.black54, height: 1.5)),
+                    const Text("Nikmati pengalaman bermain game terbaik. Unit terawat, stik responsif, dan siap dimainkan!", style: TextStyle(color: Colors.black54, height: 1.5)),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -88,7 +106,7 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
           color: Theme.of(context).cardColor,
           child: Row(
             children: [
-              Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [const Text("Harga Sewa"), Text("${currencyFormatter.format(widget.console.price)} /jam", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue))]),
+              Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [const Text("Harga Mulai"), Text("${currencyFormatter.format(widget.console.price)} /jam", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue))]),
               const Spacer(),
               ElevatedButton(
                 onPressed: widget.console.isAvailable ? () => _showBookingForm(context) : null,
@@ -102,24 +120,17 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
     );
   }
 
+  // --- FORM BOOKING (LOGIKA HARGA BARU) ---
   void _showBookingForm(BuildContext parentContext) {
     int duration = 1;
-    String selectedType = "Main di Tempat";
-    String selectedPayment = "Tunai / Cash"; 
+    String selectedType = "Main di Tempat"; // Default
+    String selectedPayment = "Tunai / Cash";
     
-    // Opsi Pembayaran
-    final List<String> paymentOptions = [
-      "Tunai / Cash",
-      "Transfer BCA (82736xxxxx)",
-      "Transfer BRI (1234xxxxx)",
-      "Transfer Mandiri (9988xxxxx)",
-      "E-Wallet DANA (0812xxxxx)",
-      "E-Wallet GoPay (0812xxxxx)",
-      "E-Wallet OVO (0812xxxxx)",
-    ];
+    // Variabel Paket Bawa Pulang
+    String selectedPackage = "12 Jam"; // Pilihan Paket Default
 
-    final user = FirebaseAuth.instance.currentUser;
     final bookingCubit = parentContext.read<BookingCubit>();
+    final user = FirebaseAuth.instance.currentUser;
 
     showModalBottomSheet(
       context: parentContext,
@@ -128,7 +139,26 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            int totalPrice = duration * widget.console.price;
+            
+            // --- LOGIKA HITUNG HARGA OTOMATIS ---
+            int totalPrice = 0;
+            int finalDuration = 0;
+
+            if (selectedType == "Main di Tempat") {
+              // Hitungan Per Jam Biasa
+              totalPrice = duration * widget.console.price;
+              finalDuration = duration;
+            } else {
+              // Hitungan Paket Bawa Pulang
+              if (selectedPackage == "12 Jam") {
+                totalPrice = 45000;
+                finalDuration = 12;
+              } else {
+                totalPrice = 80000;
+                finalDuration = 24;
+              }
+            }
+            // ------------------------------------
             
             return Padding(
               padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20, left: 20, right: 20, top: 20),
@@ -140,17 +170,8 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
                   const SizedBox(height: 20),
                   const Text("Konfirmasi Pesanan", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
-                  
-                  // 1. OPSI DURASI
-                  Text("Durasi Sewa (${selectedType == 'Bawa Pulang' ? 'Paket Harian' : 'Per Jam'})", style: const TextStyle(color: Colors.grey)),
-                  Row(children: [
-                    IconButton(onPressed: () => duration > 1 ? setModalState(() => duration--) : null, icon: const Icon(Icons.remove_circle_outline, color: Colors.red)),
-                    Text("$duration Jam", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    IconButton(onPressed: () => setModalState(() => duration++), icon: const Icon(Icons.add_circle_outline, color: Colors.green)),
-                  ]),
-                  const Divider(),
 
-                  // 2. OPSI TIPE SEWA
+                  // 1. PILIH TIPE SEWA
                   const Text("Mau main dimana?", style: TextStyle(fontWeight: FontWeight.bold)),
                   Row(
                     children: [
@@ -170,8 +191,47 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
                       ),
                     ],
                   ),
+                  const Divider(),
+
+                  // 2. OPSI DURASI (BERUBAH SESUAI TIPE SEWA)
+                  if (selectedType == "Main di Tempat") ...[
+                    // TAMPILAN PER JAM
+                    const Text("Berapa Jam?", style: TextStyle(color: Colors.grey)),
+                    Row(children: [
+                      IconButton(onPressed: () => duration > 1 ? setModalState(() => duration--) : null, icon: const Icon(Icons.remove_circle_outline, color: Colors.red)),
+                      Text("$duration Jam", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      IconButton(onPressed: () => setModalState(() => duration++), icon: const Icon(Icons.add_circle_outline, color: Colors.green)),
+                    ]),
+                  ] else ...[
+                    // TAMPILAN PILIH PAKET (BAWA PULANG)
+                    const Text("Pilih Paket Hemat:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text("12 Jam - 45rb"),
+                            selected: selectedPackage == "12 Jam",
+                            onSelected: (bool selected) => setModalState(() => selectedPackage = "12 Jam"),
+                            selectedColor: Colors.blue[100],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text("24 Jam - 80rb"),
+                            selected: selectedPackage == "24 Jam",
+                            onSelected: (bool selected) => setModalState(() => selectedPackage = "24 Jam"),
+                            selectedColor: Colors.green[100],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   
-                  // 3. OPSI PEMBAYARAN (DROPDOWN)
+                  const SizedBox(height: 20),
+
+                  // 3. METODE PEMBAYARAN
                   const Text("Metode Pembayaran", style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Container(
@@ -179,19 +239,9 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
                     decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(10)),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        value: selectedPayment,
-                        isExpanded: true,
-                        items: paymentOptions.map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Row(
-                              children: [
-                                Icon(value.contains("Tunai") ? Icons.money : (value.contains("BCA") || value.contains("BRI") || value.contains("Mandiri") ? Icons.account_balance : Icons.phone_android), size: 18, color: Colors.blue[800]),
-                                const SizedBox(width: 10),
-                                Text(value, style: const TextStyle(fontSize: 14)),
-                              ],
-                            ),
-                          );
+                        value: selectedPayment, isExpanded: true,
+                        items: ["Tunai / Cash", "Transfer BCA", "Transfer BRI", "E-Wallet DANA", "E-Wallet GoPay"].map((String value) {
+                          return DropdownMenuItem<String>(value: value, child: Text(value, style: const TextStyle(fontSize: 14)));
                         }).toList(),
                         onChanged: (newValue) => setModalState(() => selectedPayment = newValue!),
                       ),
@@ -200,7 +250,7 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
                   
                   const SizedBox(height: 20),
 
-                  // 4. TOTAL
+                  // 4. TOTAL HARGA (OTOMATIS)
                   Container(
                     padding: const EdgeInsets.all(15),
                     decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(10)),
@@ -214,7 +264,7 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
                   ),
                   const SizedBox(height: 16),
 
-                  // TOMBOL
+                  // TOMBOL KONFIRMASI
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -224,8 +274,11 @@ class _ConsoleDetailViewState extends State<ConsoleDetailView> {
                           consoleName: widget.console.name, 
                           userName: user?.email ?? "Tamu",
                           bookingDate: DateTime.now(), 
-                          durationHours: duration, 
+                          
+                          // Gunakan durasi & harga yang sudah dihitung otomatis
+                          durationHours: finalDuration, 
                           totalPrice: totalPrice,
+                          
                           rentalType: selectedType, 
                           paymentMethod: selectedPayment, 
                         );
