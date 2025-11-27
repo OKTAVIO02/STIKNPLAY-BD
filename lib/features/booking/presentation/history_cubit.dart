@@ -34,7 +34,7 @@ class HistoryCubit extends Cubit<HistoryState> {
   }
 
   // Fungsi baru: KEMBALIKAN UNIT
-  Future<void> returnUnit(String bookingId, String consoleId) async {
+  Future<void> returnUnit(String bookingId, String consoleId, int calculatedFine) async {
     try {
       await _repository.finishBooking(bookingId, consoleId);
       // Kita tidak perlu emit state baru, karena Stream di loadHistory 

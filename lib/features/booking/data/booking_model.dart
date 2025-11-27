@@ -8,9 +8,11 @@ class BookingModel {
   final DateTime bookingDate;
   final int durationHours;
   final int totalPrice;
-  final String status; // pending, success, finished
-  final String rentalType; // 'Main di Tempat' atau 'Bawa Pulang'
-  final String paymentMethod; // 'Tunai', 'BCA', 'Dana', dll
+  final String status;
+  final String rentalType;
+  final String paymentMethod;
+  final int fine;
+  final List<Map<String, dynamic>> accessories; // <--- FIELD BARU: LIST AKSESORIS
 
   BookingModel({
     this.id,
@@ -21,11 +23,12 @@ class BookingModel {
     required this.durationHours,
     required this.totalPrice,
     this.status = 'pending',
-    this.rentalType = 'Main di Tempat', // Default
-    this.paymentMethod = 'Tunai / Cash', // Default
+    this.rentalType = 'Main di Tempat',
+    this.paymentMethod = 'Tunai / Cash',
+    this.fine = 0,
+    this.accessories = const [], // Default kosong
   });
 
-  // Mengubah Data ke Map (untuk simpan ke Firebase)
   Map<String, dynamic> toMap() {
     return {
       'consoleId': consoleId,
@@ -37,10 +40,11 @@ class BookingModel {
       'status': status,
       'rentalType': rentalType,
       'paymentMethod': paymentMethod,
+      'fine': fine,
+      'accessories': accessories, // Simpan List Aksesoris
     };
   }
 
-  // Mengambil Data dari Map (dari Firebase)
   factory BookingModel.fromMap(String id, Map<String, dynamic> map) {
     return BookingModel(
       id: id,
@@ -53,6 +57,9 @@ class BookingModel {
       status: map['status'] ?? 'pending',
       rentalType: map['rentalType'] ?? 'Main di Tempat',
       paymentMethod: map['paymentMethod'] ?? 'Tunai / Cash',
+      fine: map['fine'] ?? 0,
+      // Ambil List Aksesoris (pastikan di-cast ke List<Map>)
+      accessories: List<Map<String, dynamic>>.from(map['accessories'] ?? []),
     );
   }
 }
