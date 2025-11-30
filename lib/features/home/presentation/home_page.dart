@@ -18,6 +18,8 @@ import '../../auth/presentation/login_page.dart';
 import 'admin_dashboard_page.dart';
 import 'profile_sub_pages.dart';
 import 'notification_page.dart';
+import 'edit_profile_page.dart';
+import 'favorites_page.dart'; // <--- PENTING: IMPORT HALAMAN FAVORIT
 
 // --- IMPORT WIDGET LOADING ---
 import '../../../../core/presentation/ps_loading_widget.dart';
@@ -99,12 +101,10 @@ class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
 
   Future<void> _launchWhatsApp() async {
-    const String adminNumber = "6281234567890";
+    const String adminNumber = "6281234567890"; // Ganti No WA Admin
     const String message = "Halo Admin PS Rental, saya mau tanya...";
-
     final Uri url = Uri.parse(
         "https://wa.me/$adminNumber?text=${Uri.encodeComponent(message)}");
-
     try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } catch (e) {
@@ -147,7 +147,6 @@ class HomeTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- HEADER ---
                   Padding(
                     padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
                     child: Column(
@@ -375,8 +374,6 @@ class HomeTab extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 15),
-
-                  // --- CONSOLE GRID (PENDEK & KECIL) ---
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     child: Text(
@@ -414,8 +411,7 @@ class HomeTab extends StatelessWidget {
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            // RASIO 1.1 AGAR KOTAKNYA PENDEK/GEPENG
-                            childAspectRatio: 1.1, 
+                            childAspectRatio: 1.1,
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
                           ),
@@ -522,6 +518,9 @@ class HomeTab extends StatelessWidget {
   }
 }
 
+// ============================================================================
+// TAB 3: PROFILE TAB (DENGAN MENU FAVORIT)
+// ============================================================================
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
 
@@ -705,6 +704,7 @@ class ProfileTab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     children: [
+                      // --- MENU ADMIN ---
                       if (isAdmin)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 15),
@@ -724,6 +724,44 @@ class ProfileTab extends StatelessWidget {
                             ),
                           ),
                         ),
+
+                      // --- EDIT PROFIL ---
+                      _buildProfileCard(
+                        context,
+                        icon: Icons.edit_note_rounded,
+                        title: "Edit Profil Saya",
+                        subtitle: "Ubah nama, no HP, alamat",
+                        iconColor: Colors.white,
+                        iconBg: const LinearGradient(
+                            colors: [Color(0xFF00C6FF), Color(0xFF0072FF)]),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const EditProfilePage()),
+                        ),
+                      ),
+
+                      const SizedBox(height: 15),
+
+                      // --- FAVORIT SAYA (MENU BARU) ---
+                      _buildProfileCard(
+                        context,
+                        icon: Icons.favorite_rounded,
+                        title: "Favorit Saya",
+                        subtitle: "Daftar console impian",
+                        iconColor: Colors.white,
+                        iconBg: const LinearGradient(
+                            colors: [Colors.pink, Colors.redAccent]),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const FavoritesPage()),
+                        ),
+                      ),
+
+                      const SizedBox(height: 15),
+
+                      // --- PENGATURAN ---
                       _buildProfileCard(
                         context,
                         icon: Icons.settings_rounded,
@@ -739,6 +777,8 @@ class ProfileTab extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 15),
+                      
+                      // --- BANTUAN ---
                       _buildProfileCard(
                         context,
                         icon: Icons.headset_mic_rounded,
@@ -754,6 +794,8 @@ class ProfileTab extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 15),
+                      
+                      // --- PRIVASI ---
                       _buildProfileCard(
                         context,
                         icon: Icons.lock_outline_rounded,
@@ -769,6 +811,7 @@ class ProfileTab extends StatelessWidget {
                                   const PrivacyPolicyPage()),
                         ),
                       ),
+
                       const SizedBox(height: 40),
                       SizedBox(
                         width: double.infinity,
@@ -897,7 +940,6 @@ class _SearchWidget extends StatelessWidget {
   }
 }
 
-// --- CARD CONSOLE (COMPACT SIZE) ---
 Widget _buildCard(BuildContext context, ConsoleModel console) {
   final currencyFormatter = NumberFormat.currency(
       locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
