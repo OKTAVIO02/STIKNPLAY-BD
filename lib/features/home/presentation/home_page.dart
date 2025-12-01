@@ -102,8 +102,8 @@ class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
 
   Future<void> _launchWhatsApp() async {
-    const String adminNumber = "6281234567890"; // Ganti No WA Admin
-    const String message = "Halo Admin PS Rental, saya mau tanya...";
+    const String adminNumber = "6281232885875"; // Ganti No WA Admin
+    const String message = "Halo MinSPlay, saya mau tanya nih...";
 
     final Uri url = Uri.parse(
         "https://wa.me/$adminNumber?text=${Uri.encodeComponent(message)}");
@@ -127,11 +127,7 @@ class HomeTab extends StatelessWidget {
         body: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                Color(0xFF0F2027),
-                Color(0xFF203A43),
-                Color(0xFF2C5364)
-              ],
+              colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -706,9 +702,7 @@ class ProfileTab extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              isAdmin
-                                  ? "ADMINISTRATOR"
-                                  : "VERIFIED MEMBER",
+                              isAdmin ? "ADMINISTRATOR" : "VERIFIED MEMBER",
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
@@ -725,7 +719,7 @@ class ProfileTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 25),
-                
+
                 // DAFTAR MENU
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -804,7 +798,7 @@ class ProfileTab extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 15),
-                      
+
                       // --- BANTUAN ---
                       _buildProfileCard(
                         context,
@@ -821,7 +815,7 @@ class ProfileTab extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 15),
-                      
+
                       // --- PRIVASI ---
                       _buildProfileCard(
                         context,
@@ -834,8 +828,7 @@ class ProfileTab extends StatelessWidget {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) =>
-                                  const PrivacyPolicyPage()),
+                              builder: (context) => const PrivacyPolicyPage()),
                         ),
                       ),
 
@@ -858,7 +851,7 @@ class ProfileTab extends StatelessWidget {
                       ),
 
                       const SizedBox(height: 40),
-                      
+
                       // --- TOMBOL KELUAR ---
                       SizedBox(
                         width: double.infinity,
@@ -972,8 +965,7 @@ class _SearchWidget extends StatelessWidget {
           onChanged: (value) => context.read<HomeCubit>().searchConsole(value),
           decoration: InputDecoration(
             hintText: "Cari Console...",
-            hintStyle: TextStyle(
-                color: Colors.white.withOpacity(0.5)),
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
             prefixIcon: const Icon(
               Icons.search_rounded,
               color: Color(0xFF00C6FF),
@@ -991,8 +983,8 @@ class _SearchWidget extends StatelessWidget {
 
 // --- CARD CONSOLE (COMPACT & DARK GLASS STYLE) ---
 Widget _buildCard(BuildContext context, ConsoleModel console) {
-  final currencyFormatter = NumberFormat.currency(
-      locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+  final currencyFormatter =
+      NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
   return GestureDetector(
     onTap: () => Navigator.push(
       context,
