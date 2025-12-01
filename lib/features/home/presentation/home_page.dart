@@ -19,7 +19,8 @@ import 'admin_dashboard_page.dart';
 import 'profile_sub_pages.dart';
 import 'notification_page.dart';
 import 'edit_profile_page.dart';
-import 'favorites_page.dart'; // <--- PENTING: IMPORT HALAMAN FAVORIT
+import 'favorites_page.dart';
+import 'about_us_page.dart';
 
 // --- IMPORT WIDGET LOADING ---
 import '../../../../core/presentation/ps_loading_widget.dart';
@@ -103,8 +104,10 @@ class HomeTab extends StatelessWidget {
   Future<void> _launchWhatsApp() async {
     const String adminNumber = "6281234567890"; // Ganti No WA Admin
     const String message = "Halo Admin PS Rental, saya mau tanya...";
+
     final Uri url = Uri.parse(
         "https://wa.me/$adminNumber?text=${Uri.encodeComponent(message)}");
+
     try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } catch (e) {
@@ -147,6 +150,7 @@ class HomeTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // --- HEADER ---
                   Padding(
                     padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
                     child: Column(
@@ -302,10 +306,14 @@ class HomeTab extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                  // SEARCH BAR
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 24),
                     child: _SearchWidget(),
                   ),
+
+                  // --- BANNER ---
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                     child: Text(
@@ -373,7 +381,10 @@ class HomeTab extends StatelessWidget {
                       );
                     },
                   ),
+
                   const SizedBox(height: 15),
+
+                  // --- CONSOLE GRID (COMPACT) ---
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     child: Text(
@@ -385,6 +396,7 @@ class HomeTab extends StatelessWidget {
                       ),
                     ),
                   ),
+
                   BlocBuilder<HomeCubit, HomeState>(
                     builder: (context, state) {
                       if (state is HomeLoading) {
@@ -411,7 +423,7 @@ class HomeTab extends StatelessWidget {
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            childAspectRatio: 1.1,
+                            childAspectRatio: 1.1, // COMPACT SIZE
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
                           ),
@@ -423,7 +435,10 @@ class HomeTab extends StatelessWidget {
                       return const SizedBox();
                     },
                   ),
+
                   const SizedBox(height: 25),
+
+                  // --- GAMES LIST ---
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
@@ -519,7 +534,7 @@ class HomeTab extends StatelessWidget {
 }
 
 // ============================================================================
-// TAB 3: PROFILE TAB (DENGAN MENU FAVORIT)
+// TAB 3: PROFILE TAB (LENGKAP DENGAN SEMUA MENU)
 // ============================================================================
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -573,11 +588,13 @@ class ProfileTab extends StatelessWidget {
         String displayName = user.email?.split('@')[0] ?? "User";
         String role = "user";
         String displayEmail = user.email ?? "";
+        String? photoURL;
 
         if (snapshot.hasData && snapshot.data!.exists) {
           final data = snapshot.data!.data() as Map<String, dynamic>;
           displayName = data['displayName'] ?? displayName;
           role = data['role'] ?? "user";
+          photoURL = data['photoURL'];
         }
 
         final bool isAdmin = role == 'admin';
@@ -587,6 +604,7 @@ class ProfileTab extends StatelessWidget {
           body: SingleChildScrollView(
             child: Column(
               children: [
+                // HEADER PROFIL
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.only(top: 70, bottom: 40),
@@ -624,16 +642,23 @@ class ProfileTab extends StatelessWidget {
                         child: CircleAvatar(
                           radius: 55,
                           backgroundColor: const Color(0xFFE3F2FD),
-                          child: Text(
-                            displayName.isNotEmpty
-                                ? displayName[0].toUpperCase()
-                                : "U",
-                            style: const TextStyle(
-                              fontSize: 50,
-                              color: Color(0xFF1565C0),
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
+                          // LOGIKA FOTO PROFIL
+                          backgroundImage:
+                              photoURL != null && photoURL!.isNotEmpty
+                                  ? NetworkImage(photoURL!)
+                                  : null,
+                          child: (photoURL == null || photoURL!.isEmpty)
+                              ? Text(
+                                  displayName.isNotEmpty
+                                      ? displayName[0].toUpperCase()
+                                      : "U",
+                                  style: const TextStyle(
+                                    fontSize: 50,
+                                    color: Color(0xFF1565C0),
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                )
+                              : null,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -700,11 +725,13 @@ class ProfileTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 25),
+                
+                // DAFTAR MENU
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     children: [
-                      // --- MENU ADMIN ---
+                      // --- MENU ADMIN (JIKA ADMIN) ---
                       if (isAdmin)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 15),
@@ -743,7 +770,7 @@ class ProfileTab extends StatelessWidget {
 
                       const SizedBox(height: 15),
 
-                      // --- FAVORIT SAYA (MENU BARU) ---
+                      // --- FAVORIT SAYA ---
                       _buildProfileCard(
                         context,
                         icon: Icons.favorite_rounded,
@@ -812,7 +839,27 @@ class ProfileTab extends StatelessWidget {
                         ),
                       ),
 
+                      const SizedBox(height: 15),
+
+                      // --- TENTANG KAMI ---
+                      _buildProfileCard(
+                        context,
+                        icon: Icons.info_outline_rounded,
+                        title: "Tentang Kami",
+                        subtitle: "Versi aplikasi & info developer",
+                        iconColor: Colors.white,
+                        iconBg: const LinearGradient(
+                            colors: [Colors.indigo, Colors.blueGrey]),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const AboutUsPage()),
+                        ),
+                      ),
+
                       const SizedBox(height: 40),
+                      
+                      // --- TOMBOL KELUAR ---
                       SizedBox(
                         width: double.infinity,
                         height: 55,
@@ -907,6 +954,7 @@ class ProfileTab extends StatelessWidget {
   }
 }
 
+// --- WIDGET PENDUKUNG (DARK MODE) ---
 class _SearchWidget extends StatelessWidget {
   const _SearchWidget();
   @override
@@ -914,17 +962,18 @@ class _SearchWidget extends StatelessWidget {
     return Container(
       height: 60,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withOpacity(0.1), // Transparan
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Center(
         child: TextField(
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white), // Text Putih
           onChanged: (value) => context.read<HomeCubit>().searchConsole(value),
           decoration: InputDecoration(
             hintText: "Cari Console...",
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+            hintStyle: TextStyle(
+                color: Colors.white.withOpacity(0.5)),
             prefixIcon: const Icon(
               Icons.search_rounded,
               color: Color(0xFF00C6FF),
@@ -940,6 +989,7 @@ class _SearchWidget extends StatelessWidget {
   }
 }
 
+// --- CARD CONSOLE (COMPACT & DARK GLASS STYLE) ---
 Widget _buildCard(BuildContext context, ConsoleModel console) {
   final currencyFormatter = NumberFormat.currency(
       locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
@@ -951,7 +1001,7 @@ Widget _buildCard(BuildContext context, ConsoleModel console) {
     ),
     child: Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white.withOpacity(0.08), // Dark Glass
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
         boxShadow: [
