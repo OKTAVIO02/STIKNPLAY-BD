@@ -102,7 +102,7 @@ class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
 
   Future<void> _launchWhatsApp() async {
-    const String adminNumber = "6281234567890"; // Ganti No WA Admin
+    const String adminNumber = "6281232885875"; // Ganti No WA Admin
     const String message = "Halo Admin PS Rental, saya mau tanya...";
 
     final Uri url = Uri.parse(

@@ -10,19 +10,22 @@ import '../../booking/data/booking_model.dart';
 import '../../booking/presentation/history_cubit.dart';
 
 import '../data/home_repository.dart';
+import '../data/console_model.dart';
 import 'home_cubit.dart';
 
 // --- IMPORT HALAMAN LAIN ---
 import '../../auth/presentation/login_page.dart';
 import 'add_console_page.dart';
+import 'console_detail_page.dart';
 import 'edit_console_page.dart'; 
-import 'admin_sub_pages.dart'; 
-import 'admin_send_notif_page.dart'; 
+import 'admin_sub_pages.dart'; // Halaman Manajemen User, Info, Config
+import 'admin_send_notif_page.dart'; // Halaman Kirim Notifikasi
 
+// IMPORT LOADING WIDGET
 import '../../../../core/presentation/ps_loading_widget.dart';
 
 // ============================================================================
-// 1. MAIN DASHBOARD ADMIN (NAVIGASI UTAMA - DARK MODE)
+// 1. MAIN DASHBOARD ADMIN (NAVIGASI UTAMA)
 // ============================================================================
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -34,10 +37,11 @@ class AdminDashboardPage extends StatefulWidget {
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   int _currentIndex = 0; 
 
+  // Daftar Tab Halaman Admin
   final List<Widget> _pages = [
-    const AdminBookingTab(),   
-    const AdminInventoryTab(), 
-    const AdminAccountTab(), 
+    const AdminBookingTab(),   // Tab Pesanan
+    const AdminInventoryTab(), // Tab Kelola Unit
+    const AdminAccountTab(),   // Tab Akun & Menu Lain
   ];
 
   @override
@@ -369,14 +373,41 @@ class AdminAccountTab extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // MENU DARK MODE
-                  _buildAdminMenuTile(context, icon: Icons.notifications_active_rounded, title: "Kirim Notifikasi", subtitle: "Broadcast promo", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminSendNotifPage()))),
+                  // 1. MENU KIRIM NOTIFIKASI
+                  _buildAdminMenuTile(
+                    context, 
+                    icon: Icons.notifications_active_rounded, 
+                    title: "Kirim Notifikasi ke User", 
+                    subtitle: "Broadcast info promo", 
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminSendNotifPage()))
+                  ),
                   const SizedBox(height: 10),
-                  _buildAdminMenuTile(context, icon: Icons.storefront_rounded, title: "Informasi Rental", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminRentalInfoPage()))),
+                  
+                  // 2. MENU INFORMASI RENTAL
+                  _buildAdminMenuTile(
+                    context, 
+                    icon: Icons.storefront_rounded, 
+                    title: "Informasi Rental", 
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminRentalInfoPage()))
+                  ),
                   const SizedBox(height: 10),
-                  _buildAdminMenuTile(context, icon: Icons.people_outline_rounded, title: "Manajemen User", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminUserManagementPage()))),
+                  
+                  // 3. MENU MANAJEMEN USER
+                  _buildAdminMenuTile(
+                    context, 
+                    icon: Icons.people_outline_rounded, 
+                    title: "Manajemen User", 
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminUserManagementPage()))
+                  ),
                   const SizedBox(height: 10),
-                  _buildAdminMenuTile(context, icon: Icons.settings_applications_rounded, title: "Konfigurasi Sistem", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminSystemConfigPage()))),
+                  
+                  // 4. MENU KONFIGURASI SISTEM
+                  _buildAdminMenuTile(
+                    context, 
+                    icon: Icons.settings_applications_rounded, 
+                    title: "Konfigurasi Sistem", 
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminSystemConfigPage()))
+                  ),
                   
                   const SizedBox(height: 30),
                   
