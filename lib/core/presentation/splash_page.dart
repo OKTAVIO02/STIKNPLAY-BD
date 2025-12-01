@@ -16,7 +16,6 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
-  
   @override
   void initState() {
     super.initState();
@@ -37,27 +36,37 @@ class _SplashPageState extends State<SplashPage> {
       // === JIKA SUDAH LOGIN ===
       // Cek Role-nya (Admin atau User?)
       try {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
         final role = doc.data()?['role'] ?? 'user';
 
         if (mounted) {
           if (role == 'admin') {
             // Masuk Dashboard Admin
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboardPage()));
+            Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const AdminDashboardPage()));
           } else {
             // Masuk Home User
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (context) => const HomePage()));
           }
         }
       } catch (e) {
         // Jika error (misal internet mati), lempar ke Login demi keamanan
-        if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+        if (mounted)
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (context) => const LoginPage()));
       }
     } else {
       // === JIKA BELUM LOGIN (USER BARU) ===
       // Arahkan ke ONBOARDING PAGE (Perkenalan)
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const OnboardingPage()));
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (context) => const OnboardingPage()));
       }
     }
   }
@@ -85,31 +94,42 @@ class _SplashPageState extends State<SplashPage> {
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.1),
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withOpacity(0.2), width: 2),
+                border:
+                    Border.all(color: Colors.white.withOpacity(0.2), width: 2),
                 boxShadow: [
-                  BoxShadow(color: const Color(0xFF00C6FF).withOpacity(0.5), blurRadius: 30, spreadRadius: 5)
+                  BoxShadow(
+                      color: const Color(0xFF00C6FF).withOpacity(0.5),
+                      blurRadius: 30,
+                      spreadRadius: 5)
                 ],
               ),
-              child: const Icon(Icons.gamepad_rounded, size: 80, color: Colors.white),
+              child: const Icon(Icons.gamepad_rounded,
+                  size: 80, color: Colors.white),
             ),
-            
+
             const SizedBox(height: 30),
-            
+
             // TEKS BRANDING
             const Text(
-              "PS RENTAL PRO",
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 3),
+              "StickNPlay",
+              style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 3),
             ),
             const SizedBox(height: 10),
             Text(
               "Sewa Console Jadi Lebih Mudah",
-              style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.6)),
+              style:
+                  TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.6)),
             ),
 
             const SizedBox(height: 60),
 
             // LOADING
-            const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00C6FF))),
+            const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00C6FF))),
           ],
         ),
       ),
