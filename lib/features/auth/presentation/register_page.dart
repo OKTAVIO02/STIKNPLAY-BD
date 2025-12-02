@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../home/presentation/home_page.dart';
+import 'login_page.dart'; // Pastikan import ini benar
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -11,17 +11,20 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  // Controller
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   
+  // State
   bool _isLoading = false;
-  bool _isPasswordVisible = false; // Toggle lihat password
-  bool _isConfirmPasswordVisible = false; // Toggle lihat konfirmasi password
+  bool _isPasswordVisible = false; 
+  bool _isConfirmPasswordVisible = false; 
 
-  // --- LOGIKA REGISTER (TETAP SAMA, TIDAK DIUBAH) ---
+  // --- LOGIKA REGISTER ---
   void _register() async {
+    // 1. Validasi Input Kosong
     if (_nameController.text.isEmpty || 
         _emailController.text.isEmpty || 
         _passwordController.text.isEmpty || 
@@ -30,6 +33,7 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    // 2. Validasi Password Sama
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Password tidak sama!")));
       return;
@@ -38,37 +42,52 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Buat Akun di Authentication
+      // 3. Buat Akun di Authentication
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // 2. Simpan Data Tambahan ke Firestore
+      // 4. Simpan Data User ke Firestore (Database)
       String uid = userCredential.user!.uid;
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'uid': uid,
         'displayName': _nameController.text.trim(),
         'email': _emailController.text.trim(),
-        'phoneNumber': '-', // Default
-        'role': 'user',     // Default user biasa
+        'phoneNumber': '-', // Default kosong
+        'address': '-',     // Default kosong
+        'photoURL': null,   // Default kosong (akan pakai inisial/asset)
+        'role': 'user',     // Default jadi User biasa
         'createdAt': DateTime.now(),
-        'address': '-',
       });
 
-      // 3. Update Display Name di Auth (Opsional tapi bagus)
+      // 5. Update Nama di Auth (Biar sinkron)
       await userCredential.user!.updateDisplayName(_nameController.text.trim());
 
+      // 6. SUKSES -> LOGOUT -> PINDAH KE LOGIN PAGE
+      await FirebaseAuth.instance.signOut(); // Logout sesi register
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ Registrasi Berhasil!"), backgroundColor: Colors.green));
-        // Pindah ke Home & Hapus riwayat back
-        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const HomePage()), (route) => false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("✅ Akun Berhasil Dibuat! Silakan Login."), 
+            backgroundColor: Colors.green
+          )
+        );
+        
+        // Pindah ke Halaman Login (Hapus riwayat back)
+        Navigator.pushAndRemoveUntil(
+          context, 
+          MaterialPageRoute(builder: (context) => const LoginPage()), 
+          (route) => false
+        );
       }
 
     } on FirebaseAuthException catch (e) {
       String message = "Registrasi Gagal";
-      if (e.code == 'weak-password') message = "Password terlalu lemah.";
+      if (e.code == 'weak-password') message = "Password terlalu lemah (min 6 karakter).";
       else if (e.code == 'email-already-in-use') message = "Email sudah terdaftar.";
+      else if (e.code == 'invalid-email') message = "Format email salah.";
       
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
     } catch (e) {
@@ -78,11 +97,11 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  // --- TAMPILAN UI BARU (PREMIUM DESIGN) ---
+  // --- TAMPILAN UI (DARK LUXURY) ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Background Gradient Mewah (Sama dengan Login)
+      // Background Gradient Gelap
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -104,20 +123,20 @@ class _RegisterPageState extends State<RegisterPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // 1. HEADER REGISTER
+                  // 1. HEADER
                   const Text(
                     "Buat Akun Baru",
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Gabung sekarang dan mulai petualanganmu!",
+                    "Gabung sekarang dan mulai main!",
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.7)),
                   ),
                   const SizedBox(height: 30),
 
-                  // 2. FORM INPUT (CARD GLASSMORPHISM)
+                  // 2. FORM INPUT (GLASS CARD)
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -128,10 +147,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     child: Column(
                       children: [
-                        // Input Nama Lengkap
+                        // Input Nama
                         _buildPremiumTextField(
                           controller: _nameController,
-                          hint: "Nama Lengkap / Panggilan",
+                          hint: "Nama Lengkap",
                           icon: Icons.person_outline_rounded,
                         ),
                         const SizedBox(height: 16),
@@ -168,7 +187,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         
                         const SizedBox(height: 30),
 
-                        // Tombol Daftar Gradient
+                        // Tombol Daftar
                         SizedBox(
                           width: double.infinity,
                           height: 55,
@@ -197,7 +216,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   const SizedBox(height: 30),
 
-                  // 3. FOOTER LOGIN
+                  // 3. FOOTER (Ke Login)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -217,7 +236,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // --- WIDGET HELPER UNTUK TEXTFIELD PREMIUM ---
+  // --- WIDGET HELPER TEXTFIELD ---
   Widget _buildPremiumTextField({
     required TextEditingController controller,
     required String hint,
